@@ -1,0 +1,100 @@
+---
+- name: create app system user
+  user:
+    name: "{{ app_user }}"
+    system: true
+    shell: /bin/bash
+    home: "/home/{{ app_user }}"
+    create_home: true
+
+- name: install python venv package
+  apt:
+    name: python3-venv
+    state: present
+
+- name: sync application code
+  synchronize:
+    src: "{{ playbook_dir }}/../../"
+    dest: "{{ app_dir }}"
+    rsync_opts:
+      - "--exclude=.venv"
+      - "--exclude=node_modules"
+      - "--exclude=deploy"
+      - "--exclude=.git"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: create virtualenv and install the app
+  pip:
+    requirements: null
+    name: "."
+    chdir: "{{ app_dir }}"
+    virtualenv: "/home/{{ app_user }}/venv"
+    virtualenv_command: python3 -m venv
+    editable: true
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: write environment file
+  template:
+    src: env.j2
+    dest: "/home/{{ app_user }}/env"
+    owner: "{{ app_user }}"
+    mode: "0600"
+
+- name: run django migrations
+  command: "/home/{{ app_user }}/venv/bin/python manage.py migrate --noinput"
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    DJANGO_ENV: production
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: collect static files
+  command: "/home/{{ app_user }}/venv/bin/python manage.py collectstatic --noinput"
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    DJANGO_ENV: production
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: create /etc/{{ app_slug }}-apache
+  file:
+    path: "/etc/{{ app_slug }}-apache"
+    state: directory
+    owner: "{{ app_user }}"
+
+- name: stop existing mod_wsgi-express instance
+  command: "/etc/{{ app_slug }}-apache/apachectl stop"
+  become: true
+  become_user: "{{ app_user }}"
+  ignore_errors: true
+
+- name: setup mod_wsgi-express apache instance
+  command: >
+    /home/{{ app_user }}/venv/bin/mod_wsgi-express setup-server
+    {{ app_dir }}/{{ app_slug }}/wsgi.py
+    --port=8090 --user {{ app_user }} --group {{ app_user }}
+    --server-root=/etc/{{ app_slug }}-apache
+    --allow-localhost --reload-on-changes
+  args:
+    chdir: "{{ app_dir }}"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: start mod_wsgi-express apache instance
+  command: "/etc/{{ app_slug }}-apache/apachectl start"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: template the public apache vhost (reverse-proxies to mod_wsgi-express on :8090)
+  template:
+    src: vhost.conf.j2
+    dest: "/etc/apache2/sites-available/{{ app_slug }}.conf"
+  notify: restart apache2
+
+- name: enable the public apache vhost
+  command: "a2ensite {{ app_slug }}.conf"
+  notify: restart apache2

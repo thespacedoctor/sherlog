@@ -1,0 +1,77 @@
+{% comment %}
+THE TRANSIENT TABLE ON ITS OWN. RENDERED INSIDE transient_list.html FOR A NORMAL
+REQUEST AND RETURNED ALONE FOR AN HTMX REQUEST, SO SEARCHING, SORTING AND PAGING
+SWAP JUST THIS BLOCK. EVERY LINK IS A REAL href AS WELL AS AN hx-get, SO THE
+PAGE STILL WORKS WITH JAVASCRIPT DISABLED.
+{% endcomment %}
+<div id="transient-table"
+     hx-target="this"
+     hx-select="#transient-table"
+     hx-swap="outerHTML"
+     hx-push-url="true">
+
+    <div class="overflow-x-auto rounded-lg border border-line">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-sunken text-xs uppercase tracking-wider text-muted">
+                <tr>
+                    <th class="px-4 py-2.5 font-medium">UUID</th>
+                    {% for column in columns %}
+                    <th class="px-4 py-2.5 font-medium" {% if column.is_sorted %}aria-sort="{% if column.dir == 'desc' %}descending{% else %}ascending{% endif %}"{% endif %}>
+                        <a href="{{ column.url }}"
+                           hx-get="{{ column.url }}"
+                           class="inline-flex items-center gap-1 rounded hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-brand {% if column.is_sorted %}text-ink{% endif %}">
+                            {{ column.label }}
+                            {% if column.is_sorted %}<span aria-hidden="true">{% if column.dir == 'desc' %}&darr;{% else %}&uarr;{% endif %}</span>{% endif %}
+                        </a>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for transient in transients %}
+                <tr class="hover:bg-raised">
+                    <td class="whitespace-nowrap px-4 py-2.5">
+                        <a href="{{ transient.get_absolute_url }}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ transient.uuid }}</a>
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-2.5">{{ transient.name }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.origin }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                        {% if search_term %}No transients match &ldquo;{{ search_term }}&rdquo;.{% else %}No transients yet.{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4 flex items-center justify-between text-sm" aria-label="Pagination">
+        <p class="text-muted">
+            {{ page_obj.start_index }}&ndash;{{ page_obj.end_index }} of {{ paginator.count }}
+        </p>
+        <div class="flex items-center gap-3">
+            {% if page_obj.has_previous %}
+            <a href="?{{ querystring }}&amp;page={{ page_obj.previous_page_number }}"
+               hx-get="?{{ querystring }}&amp;page={{ page_obj.previous_page_number }}"
+               class="rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">&larr; Previous</a>
+            {% else %}
+            <span class="text-muted">&larr; Previous</span>
+            {% endif %}
+            <span class="text-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?{{ querystring }}&amp;page={{ page_obj.next_page_number }}"
+               hx-get="?{{ querystring }}&amp;page={{ page_obj.next_page_number }}"
+               class="rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">Next &rarr;</a>
+            {% else %}
+            <span class="text-muted">Next &rarr;</span>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</div>

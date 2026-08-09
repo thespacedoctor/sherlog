@@ -1,0 +1,108 @@
+/* =========================================================================
+   DESIGN TOKENS — THE SINGLE ENTRY POINT FOR CORE DESIGN SETTINGS.
+   =========================================================================
+
+   THIS FILE IS YOURS. IT IS THE ONE PLACE TO CHANGE THE LOOK OF
+   sherlog — COLOURS, SIDEBAR WIDTH, NAVBAR HEIGHT,
+   CORNER RADIUS, FONTS — ACROSS BOTH LIGHT AND DARK THEMES.
+
+   AFTER EDITING, REBUILD THE STYLESHEET:  npm run build:css
+   (OR LEAVE `npm run watch:css` RUNNING WHILE YOU WORK.)
+
+   HOW IT WORKS
+   ------------
+   EVERY VARIABLE BELOW IS MAPPED ONTO A SEMANTIC TAILWIND UTILITY BY THE
+   PRESET SHIPPED IN THE django-fundamentals PACKAGE. CHANGE A VALUE HERE AND
+   EVERY COMPONENT THAT USES THE CORRESPONDING UTILITY UPDATES:
+
+       --color-brand   ->  bg-brand    text-brand    border-brand
+       --color-surface ->  bg-surface
+       --color-ink     ->  text-ink
+       --sidebar-w     ->  w-sidebar   pl-sidebar
+       --navbar-h      ->  h-navbar    top-navbar
+       --radius        ->  rounded
+       --content-max   ->  max-w-content
+
+   COLOUR FORMAT
+   -------------
+   COLOURS ARE SPACE-SEPARATED RGB CHANNELS, *NOT* HEX. THIS IS WHAT LETS
+   TAILWIND'S OPACITY MODIFIERS WORK (bg-brand/10, text-ink/70). THE HEX
+   EQUIVALENT IS IN THE COMMENT ON EACH LINE FOR EASY EDITING — CONVERT WITH
+   ANY COLOUR PICKER, OR IN PYTHON:
+
+       >>> tuple(int("06b6d4"[i:i+2], 16) for i in (0, 2, 4))
+       (6, 182, 212)
+
+   DARK MODE
+   ---------
+   DARK MODE RE-DECLARES THE SAME VARIABLE NAMES UNDER .dark AT THE BOTTOM OF
+   THIS FILE. THERE IS NO SECOND PALETTE TO KEEP IN SYNC — ADD A NEW TOKEN
+   ONCE IN :root, AND GIVE IT A DARK VALUE ONCE IN .dark.
+   ========================================================================= */
+
+:root {
+    /* --- BRAND / ACCENT ------------------------------------------------- */
+    --color-brand: 8 145 178; /* #0891b2  cyan-600  — links, primary buttons */
+    --color-brand-fg: 255 255 255; /* #ffffff  — text ON a brand background   */
+    --color-brand-muted: 236 254 255; /* #ecfeff  — tinted backgrounds          */
+
+    /* --- SURFACES ------------------------------------------------------- */
+    --color-surface: 255 255 255; /* #ffffff  page background               */
+    --color-raised: 248 250 252; /* #f8fafc  cards, sidebar, navbar        */
+    --color-sunken: 241 245 249; /* #f1f5f9  code blocks, wells            */
+
+    /* --- TEXT ----------------------------------------------------------- */
+    --color-ink: 15 23 42; /* #0f172a  primary text                  */
+    --color-muted: 100 116 139; /* #64748b  secondary text, captions      */
+
+    /* --- LINES + FEEDBACK ----------------------------------------------- */
+    --color-line: 226 232 240; /* #e2e8f0  borders, dividers             */
+    --color-success: 22 163 74; /* #16a34a                                */
+    --color-warning: 217 119 6; /* #d97706                                */
+    --color-danger: 220 38 38; /* #dc2626                                */
+
+    /* --- DIMENSIONS ----------------------------------------------------- */
+    --sidebar-w: 16rem; /* 256px — desktop sidebar width          */
+    --navbar-h: 3.5rem; /* 56px  — top navbar height              */
+    --content-max: 48rem; /* 768px — prose/content column           */
+    --shell-max: 90rem; /* 1440px — outer app-shell max width     */
+
+    /* --- SHAPE ---------------------------------------------------------- */
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
+
+    /* --- TYPOGRAPHY ----------------------------------------------------- */
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        "Liberation Mono", monospace;
+
+    /* --- STACKING ------------------------------------------------------- */
+    --z-sidebar: 30;
+    --z-navbar: 40;
+    --z-overlay: 50;
+}
+
+/* =========================================================================
+   DARK MODE — SAME TOKEN NAMES, DARK VALUES.
+   APPLIED BY THE .dark CLASS ON <html>, SET BY THE THEME TOGGLE IN THE NAVBAR
+   AND BY THE NO-FLASH BOOT SCRIPT IN layouts/base.html.
+   ========================================================================= */
+
+.dark {
+    --color-brand: 34 211 238; /* #22d3ee  cyan-400 — lifted for contrast */
+    --color-brand-fg: 8 51 68; /* #083344                                 */
+    --color-brand-muted: 22 78 99; /* #164e63                                 */
+
+    --color-surface: 2 6 23; /* #020617  slate-950                      */
+    --color-raised: 15 23 42; /* #0f172a  slate-900                      */
+    --color-sunken: 30 41 59; /* #1e293b  slate-800                      */
+
+    --color-ink: 241 245 249; /* #f1f5f9                                 */
+    --color-muted: 148 163 184; /* #94a3b8                                 */
+
+    --color-line: 51 65 85; /* #334155  slate-700                      */
+    --color-success: 74 222 128; /* #4ade80                                 */
+    --color-warning: 251 191 36; /* #fbbf24                                 */
+    --color-danger: 248 113 113; /* #f87171                                 */
+}

@@ -1,0 +1,34 @@
+{% extends "django_fundamentals/layouts/app.html" %}
+
+{% block head_title %}Transient &middot; {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="overflow-hidden rounded-lg border border-line">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-sunken text-xs uppercase tracking-wider text-muted">
+            <tr>
+                <th class="px-4 py-2.5 font-medium">Endpoint</th>
+                <th class="px-4 py-2.5 font-medium">Methods</th>
+                <th class="px-4 py-2.5 font-medium">Type</th>
+                <th class="px-4 py-2.5 font-medium">Description</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+            {% for endpoint in endpoints %}
+            <tr class="hover:bg-raised">
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ endpoint.path }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-muted">{{ endpoint.methods }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 text-xs uppercase tracking-wider text-muted">{{ endpoint.kind }}</td>
+                <td class="px-4 py-2.5 text-muted">{{ endpoint.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<p class="mt-6 text-sm text-muted">
+    Reading is open to everyone. Creating, updating and deleting a transient
+    requires an authenticated session or an API token — generate one on the
+    <a href="{% url 'django_fundamentals_settings_api' %}" class="rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">API settings</a> page.
+</p>
+{% endblock %}

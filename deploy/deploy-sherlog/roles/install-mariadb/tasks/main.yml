@@ -1,0 +1,31 @@
+---
+- name: install mariadb server and client
+  apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+    update_cache: true
+
+- name: ensure mariadb is running
+  service:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: create application database
+  community.mysql.mysql_db:
+    name: "{{ app_slug }}"
+    state: present
+  become: true
+  become_user: root
+
+- name: create application database user
+  community.mysql.mysql_user:
+    name: "{{ app_slug }}"
+    password: "{{ db_password }}"
+    priv: "{{ app_slug }}.*:ALL"
+    state: present
+  become: true
+  become_user: root
+  no_log: true

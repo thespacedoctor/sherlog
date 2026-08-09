@@ -1,0 +1,33 @@
+---
+- name: install apache2 and mod_wsgi build dependencies
+  apt:
+    name:
+      - apache2
+      - apache2-dev
+      - python3-dev
+      - build-essential
+    state: present
+    update_cache: true
+
+- name: enable required apache modules
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rewrite
+    - proxy
+    - proxy_http
+    - ssl
+    - headers
+  notify: restart apache2
+
+- name: remove default apache site
+  file:
+    path: /etc/apache2/sites-enabled/000-default.conf
+    state: absent
+
+- name: ensure apache2 is enabled and running
+  service:
+    name: apache2
+    state: started
+    enabled: true

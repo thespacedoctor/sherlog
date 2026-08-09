@@ -1,0 +1,13 @@
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+node_modules/
+db.sqlite3
+/staticfiles/
+/media/
+static/css/tailwind.css
+.env
+*.egg-info/
+.pytest_cache/
+.claude/plans/

@@ -1,0 +1,16 @@
+<VirtualHost *:80>
+    ServerName {{ deploy_host }}
+
+    ProxyPreserveHost On
+    ProxyPass /static/ !
+    ProxyPass / http://localhost:8090/
+    ProxyPassReverse / http://localhost:8090/
+
+    Alias /static/ {{ app_dir }}/staticfiles/
+    <Directory {{ app_dir }}/staticfiles/>
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/{{ app_slug }}-error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ app_slug }}-access.log combined
+</VirtualHost>

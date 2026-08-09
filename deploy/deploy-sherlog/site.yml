@@ -1,0 +1,17 @@
+---
+# DEPLOYS sherlog TO A UBUNTU 24.04 DIGITALOCEAN DROPLET
+# ADAPTED FROM ~/git_repos/_services_/ansible-playbooks (install-apache / install-marshall-webapp
+# pattern) — THAT BASELINE IS 2019-ERA CONDA-BASED SCAFFOLDING AND WAS RE-WRITTEN HERE FOR A
+# STANDARD PYTHON VENV + MARIADB ON UBUNTU 24.04, NOT REUSED DIRECTLY.
+- hosts: webapp
+  become: true
+  vars:
+    app_slug: "sherlog"
+    app_user: "sherlog"
+    app_dir: "/home/sherlog/sherlog"
+    deploy_host: "7.7.7.7"
+    # SET db_password AND django_secret_key VIA --extra-vars OR ansible-vault, NOT COMMITTED HERE
+  roles:
+    - install-apache
+    - install-mariadb
+    - install-webapp
