@@ -7,8 +7,8 @@ from apps.transients.models import Transient
 class TransientAdmin(admin.ModelAdmin):
     """*admin listing for transients*"""
 
-    list_display = ("name", "origin", "ra", "decl", "created_at")
-    list_filter = ("origin",)
-    search_fields = ("name", "origin")
+    list_display = ("name", "origin", "sherlock_classification", "ra", "decl", "created_at")
+    list_filter = ("origin", "sherlock_classification")
+    search_fields = ("name", "origin", "sherlock_classification")
     ordering = ("name",)
     readonly_fields = ("uuid", "created_at", "updated_at")

@@ -46,6 +46,13 @@ class Transient(TimeStampedModel):
         help_text="Where the transient came from — a broker name or the URL of the filter that selected it.",
     )
     url = models.URLField(max_length=200, blank=True, help_text="Object page at the origin broker.")
+    # BLANK, NOT NULL, LIKE url — A TRANSIENT SHERLOCK HAS NOT CLASSIFIED YET
+    # READS AS "" RATHER THAN FORCING EVERY QUERY TO HANDLE BOTH EMPTY STATES.
+    sherlock_classification = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text="Sherlock's classification code for this transient, e.g. SN, NT, VS, AGN.",
+    )
 
     class Meta:
         db_table = "transients"

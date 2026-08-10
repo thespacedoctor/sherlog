@@ -52,6 +52,9 @@ PARAMETERS:
                     </td>
                     <td class="whitespace-nowrap px-4 py-2.5">{{ transient.name }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.origin }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5">
+                        {% if transient.sherlock_classification %}{{ transient.sherlock_classification }}{% else %}<span class="text-muted">&mdash;</span>{% endif %}
+                    </td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.created_at|date:"Y-m-d H:i" }}</td>
@@ -75,7 +78,7 @@ PARAMETERS:
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if show_vetted_as %}7{% else %}6{% endif %}" class="px-4 py-8 text-center text-muted">
+                    <td colspan="{% if show_vetted_as %}8{% else %}7{% endif %}" class="px-4 py-8 text-center text-muted">
                         {% if search_term %}No transients match &ldquo;{{ search_term }}&rdquo;.{% else %}No transients yet.{% endif %}
                     </td>
                 </tr>

@@ -29,6 +29,16 @@ USAGE:
                 <td class="px-4 py-2.5">{{ transient.origin }}</td>
             </tr>
             <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Classification</th>
+                <td class="px-4 py-2.5">
+                    {% if transient.sherlock_classification %}
+                        {{ transient.sherlock_classification }}
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr class="hover:bg-raised">
                 <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">RA</th>
                 <td class="px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
             </tr>

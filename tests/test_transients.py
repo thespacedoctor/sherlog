@@ -60,6 +60,11 @@ def test_absolute_url_points_at_the_detail_page(transient):
     assert transient.get_absolute_url() == f"/transient/{transient.uuid}/"
 
 
+def test_sherlock_classification_defaults_to_blank(transient):
+    # BLANK RATHER THAN NULL, SO AN UNCLASSIFIED TRANSIENT HAS ONE EMPTY STATE.
+    assert transient.sherlock_classification == ""
+
+
 @pytest.mark.django_db
 def test_name_and_origin_are_unique_together(transient):
     with pytest.raises(IntegrityError):
@@ -202,6 +207,15 @@ def test_list_page_search_narrows_the_queryset(client, transient):
 
 
 @pytest.mark.django_db
+def test_list_page_search_matches_the_classification(client, transient):
+    Transient.objects.create(
+        name="other", origin="ztf", ra=10.0, decl=10.0, sherlock_classification="SN"
+    )
+    response = client.get("/transients/", {"q": "SN"})
+    assert [t.name for t in response.context["transients"]] == ["other"]
+
+
+@pytest.mark.django_db
 def test_list_page_sorts_on_a_whitelisted_column(client):
     make_transients(3)
     response = client.get("/transients/", {"sort": "ra", "dir": "desc"})
@@ -249,6 +263,23 @@ def test_api_list_search_and_ordering(client):
     response = client.get("/api/transients/", {"ordering": "-ra"})
     values = [row["ra"] for row in response.json()["results"]]
     assert values == sorted(values, reverse=True)
+
+
+@pytest.mark.django_db
+def test_api_exposes_the_classification_and_accepts_a_write(client, transient):
+    response = client.get(f"/api/transient/{transient.uuid}/")
+    assert response.json()["sherlock_classification"] == ""
+
+    user = get_user_model().objects.create_user(username="dave", email="dave@example.org", password="pw")
+    client.force_login(user)
+    response = client.patch(
+        f"/api/transient/{transient.uuid}/",
+        data={"sherlock_classification": "SN"},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    transient.refresh_from_db()
+    assert transient.sherlock_classification == "SN"
 
 
 @pytest.mark.django_db

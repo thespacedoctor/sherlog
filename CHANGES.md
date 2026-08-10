@@ -1,5 +1,7 @@
 # Changes
 
+* **FEATURE**: transients gained a `sherlock_classification` field (10 characters, blank when unclassified), exposed in the API, searchable and sortable in the transient and vetting tables, and shown on the detail page and in the admin.
+
 * **REFACTOR**: the transient table is now named `transients` rather than Django's default `transients_transient`, matching the explicitly named `sherlock_vetting` table.
 
 * **FEATURE**: added a human vetting workflow. The `sherlock_vetting` table records, per Sherlock version, whether each transient was classified correctly, by whom, with an optional comment and the rank of the correct host.

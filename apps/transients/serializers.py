@@ -15,7 +15,17 @@ class TransientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transient
-        fields = ["uuid", "name", "origin", "ra", "decl", "url", "created_at", "updated_at"]
+        fields = [
+            "uuid",
+            "name",
+            "origin",
+            "ra",
+            "decl",
+            "url",
+            "sherlock_classification",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = ["uuid", "created_at", "updated_at"]
         # ModelSerializer DOES NOT GENERATE A UniqueTogetherValidator FOR A
         # UniqueConstraint, ONLY FOR THE LEGACY Meta.unique_together, SO IT IS

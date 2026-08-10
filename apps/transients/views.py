@@ -7,6 +7,7 @@ from apps.transients.models import Transient
 COLUMNS = (
     ("name", "Name"),
     ("origin", "Origin"),
+    ("sherlock_classification", "Classification"),
     ("ra", "RA"),
     ("decl", "Dec"),
     ("created_at", "Added"),
@@ -98,7 +99,7 @@ class TransientListView(SortableSearchableListMixin, ListView):
     paginate_by = PAGE_SIZE
 
     columns = COLUMNS
-    search_fields = ("name", "origin")
+    search_fields = ("name", "origin", "sherlock_classification")
     default_sort = DEFAULT_SORT
     tie_break_field = "uuid"
 
