@@ -24,6 +24,35 @@ directly on the "verify your email" page (and printed to the `runserver`
 console), so no SMTP setup is needed to get a working account. You can log in
 with either your username or your email address.
 
+## Choosing a database
+
+Development runs on SQLite by default — nothing to install or configure.
+Production always runs on MariaDB. To develop against the same MariaDB engine
+production uses, and catch the collation and strict-mode failures SQLite never
+shows:
+
+```bash
+cp .env.example .env          # THEN SET DJANGO_DB=mariadb AND A REAL DB_PASSWORD
+bash scripts/create_dev_db.sh # CREATES THE DATABASE, USER AND GRANT
+python manage.py migrate
+python manage.py import_transients
+```
+
+`.env` is gitignored — keep real passwords out of the repo. `create_dev_db.sh`
+reads `DB_NAME`, `DB_USER` and `DB_PASSWORD` from it and prompts for your
+MariaDB admin password, which is never stored. Every variable is optional: with
+no `.env` at all you get SQLite.
+
+Either backend can also be chosen per command, which is handy for comparing the
+two without editing anything:
+
+```bash
+DJANGO_DB=mariadb python manage.py runserver
+DJANGO_DB=sqlite python manage.py runserver
+```
+
+`pytest` always runs on SQLite, so the test suite needs no database server.
+
 ## User settings
 
 Signed-in users get a `/settings/` page, reached from the avatar at the top

@@ -3,7 +3,12 @@
   apt:
     name:
       - mariadb-server
+      # THE ANSIBLE mysql_* MODULES BELOW TALK TO MariaDB THROUGH THIS
       - python3-pymysql
+      # mysqlclient IS A C EXTENSION: WITHOUT THE CLIENT HEADERS AND pkg-config
+      # `pip install .[prod]` CANNOT BUILD IT AND THE VENV STEP FAILS
+      - default-libmysqlclient-dev
+      - pkg-config
     state: present
     update_cache: true
 
@@ -13,10 +18,16 @@
     state: started
     enabled: true
 
+# ENCODING AND COLLATION MATCH settings.py's "charset": "utf8mb4" — LETTING THE
+# SERVER DEFAULT DECIDE RISKS A latin1 DATABASE THAT ONLY FAILS ON THE FIRST
+# NON-ASCII CHARACTER.
 - name: create application database
   community.mysql.mysql_db:
     name: "{{ app_slug }}"
+    encoding: utf8mb4
+    collation: utf8mb4_unicode_ci
     state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
   become: true
   become_user: root
 
@@ -26,6 +37,7 @@
     password: "{{ db_password }}"
     priv: "{{ app_slug }}.*:ALL"
     state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
   become: true
   become_user: root
   no_log: true

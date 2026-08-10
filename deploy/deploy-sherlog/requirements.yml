@@ -1,0 +1,8 @@
+---
+# ANSIBLE COLLECTIONS THIS PLAYBOOK NEEDS BEYOND ansible-core.
+# INSTALL WITH:  ansible-galaxy collection install -r requirements.yml
+collections:
+  # SUPPLIES community.mysql.mysql_db AND community.mysql.mysql_user, USED BY
+  # THE install-mariadb ROLE
+  - name: community.mysql
+    version: ">=3.9.0"

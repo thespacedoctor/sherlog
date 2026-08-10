@@ -3,6 +3,8 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 from django_fundamentals.settings import (
     ACCOUNT_ADAPTER,
     ACCOUNT_EMAIL_VERIFICATION,
@@ -24,6 +26,12 @@ from django_fundamentals.settings import (
 # UPPERCASE NAME IN THIS MODULE'S NAMESPACE AS A REAL SETTING, IMPORTED OR NOT.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# LOCAL DEVELOPMENT SETTINGS AND SECRETS COME FROM AN UNCOMMITTED .env (SEE
+# .env.example). load_dotenv DOES NOT OVERRIDE VARIABLES THAT ARE ALREADY SET,
+# SO PRODUCTION — WHERE APACHE SUPPLIES THEM FROM THE ANSIBLE-WRITTEN env FILE —
+# IS UNAFFECTED, AND THERE IS NO .env ON THE SERVER ANYWAY.
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = "change-me-in-production"  # OVERRIDE VIA ENV VAR IN DEPLOY
 DEBUG = True
@@ -66,7 +74,15 @@ TEMPLATES = [
     }
 ]
 
-if os.environ.get("DJANGO_ENV") == "production":
+# --- DATABASE --------------------------------------------------------------
+# PRODUCTION IS ALWAYS MariaDB. DEVELOPMENT DEFAULTS TO SQLite AND SWITCHES TO
+# THE LOCAL MariaDB WITH DJANGO_DB=mariadb (SET IT IN .env OR PER COMMAND), SO
+# THE MySQL-ONLY FAILURES — COLLATION, STRICT MODE, INDEX LENGTHS — CAN BE
+# REPRODUCED BEFORE A DEPLOY RATHER THAN AFTER ONE.
+IS_PRODUCTION = os.environ.get("DJANGO_ENV") == "production"
+DATABASE_BACKEND = "mariadb" if IS_PRODUCTION else os.environ.get("DJANGO_DB", "sqlite").lower()
+
+if DATABASE_BACKEND == "mariadb":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -75,16 +91,27 @@ if os.environ.get("DJANGO_ENV") == "production":
             "PASSWORD": os.environ.get("DB_PASSWORD", ""),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "3306"),
-            "OPTIONS": {"charset": "utf8mb4"},
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                # MariaDB WOULD OTHERWISE TRUNCATE OVERLONG VALUES AND WARN
+                # RATHER THAN RAISE, HIDING BUGS SQLite NEVER SHOWS EITHER.
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
         }
     }
-else:
+elif DATABASE_BACKEND == "sqlite":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+else:
+    # FAIL LOUDLY. SILENTLY FALLING BACK TO SQLite WOULD MEAN A TYPO IN
+    # DJANGO_DB SENDS WRITES TO THE WRONG DATABASE WITHOUT A WORD.
+    raise ImproperlyConfigured(
+        f"DJANGO_DB must be 'sqlite' or 'mariadb', not {DATABASE_BACKEND!r}"
+    )
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -109,7 +136,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # THE "verify your email" PAGE SHOWS THE LINK DIRECTLY WHILE DEBUG IS ON).
 # FOR PRODUCTION SMTP — INCLUDING A GMAIL WALKTHROUGH — SEE django-fundamentals'
 # docs/source/email.md
-if os.environ.get("DJANGO_ENV") == "production":
+if IS_PRODUCTION:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))

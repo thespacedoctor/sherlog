@@ -29,8 +29,10 @@ COLUMN_ALIASES = {
     "ra": ("ra", "ramean"),
     "decl": ("decl", "dec", "decmean"),
     "url": ("uurl", "url"),
+    "origin": ("origin", "survey", "broker"),
 }
-# EVERY FIELD ABOVE EXCEPT url, WHICH IS ALLOWED TO BE BLANK.
+# THE REST ARE OPTIONAL: url MAY BE BLANK, AND A MISSING OR EMPTY origin FALLS
+# BACK TO --origin, SO A ONE-BROKER EXPORT NEEDS NO origin COLUMN AT ALL.
 REQUIRED_FIELDS = ("name", "ra", "decl")
 
 
@@ -62,8 +64,10 @@ class Command(BaseCommand):
 
         if not csvPath.is_file():
             raise CommandError(f"no such file: {csvPath}")
-        if len(origin) > 30:
-            raise CommandError("--origin must be 30 characters or fewer")
+        if len(origin) > Transient._meta.get_field("origin").max_length:
+            raise CommandError(
+                f"--origin must be {Transient._meta.get_field('origin').max_length} characters or fewer"
+            )
 
         created, updated, skipped = self.import_csv(csvPath, origin, dryRun)
 
@@ -79,7 +83,7 @@ class Command(BaseCommand):
         **Key Arguments:**
 
         - ``csvPath`` -- ``Path`` of the CSV to read
-        - ``origin`` -- the origin value written to every row
+        - ``origin`` -- fallback origin for rows without one of their own
         - ``dryRun`` -- roll the transaction back instead of committing
 
         **Return:**
@@ -106,14 +110,14 @@ class Command(BaseCommand):
             # LEAVES NOTHING BEHIND, AND --dry-run IS JUST A ROLLBACK.
             with transaction.atomic():
                 for lineNumber, row in enumerate(reader, start=2):
-                    values = self.clean_row(row, columns, lineNumber)
+                    values = self.clean_row(row, columns, lineNumber, origin)
                     if values is None:
                         skipped += 1
                         continue
 
                     transient, wasCreated = Transient.objects.update_or_create(
                         name=values["name"],
-                        origin=origin,
+                        origin=values["origin"],
                         defaults={
                             "ra": values["ra"],
                             "decl": values["decl"],
@@ -161,7 +165,7 @@ class Command(BaseCommand):
             )
         return columns
 
-    def clean_row(self, row, columns, lineNumber):
+    def clean_row(self, row, columns, lineNumber, fallbackOrigin):
         """*parse and validate one CSV row*
 
         A bad row is reported and skipped rather than aborting the import — a
@@ -173,15 +177,16 @@ class Command(BaseCommand):
         - ``row`` -- one row from ``csv.DictReader``
         - ``columns`` -- model field name -> CSV header, from ``resolve_columns``
         - ``lineNumber`` -- the row's line in the file, for the warning message
+        - ``fallbackOrigin`` -- origin for rows whose own origin cell is blank
 
         **Return:**
 
-        - ``values`` -- dict of name/ra/decl/url, or ``None`` if unusable
+        - ``values`` -- dict of name/ra/decl/url/origin, or ``None`` if unusable
 
         **Usage:**
 
         ```python
-        values = self.clean_row(row, columns, 2)
+        values = self.clean_row(row, columns, 2, "lasair")
         ```
         """
         name = (row.get(columns["name"]) or "").strip()
@@ -199,15 +204,19 @@ class Command(BaseCommand):
             return None
 
         url = (row.get(columns.get("url", ""), "") or "").strip()
+        # A ROW'S OWN origin WINS; A BLANK CELL — OR NO origin COLUMN AT ALL —
+        # FALLS BACK TO --origin.
+        origin = (row.get(columns.get("origin", ""), "") or "").strip() or fallbackOrigin
 
-        values = {"name": name, "ra": ra, "decl": decl, "url": url}
+        values = {"name": name, "ra": ra, "decl": decl, "url": url, "origin": origin}
 
         # RUN THE MODEL'S OWN VALIDATORS (RA/DEC RANGES, FIELD LENGTHS) — .save()
-        # ALONE WOULD NOT. name/origin UNIQUENESS IS HANDLED BY update_or_create,
-        # SO IT IS EXCLUDED FROM THE CHECK.
-        candidate = Transient(origin="", **values)
+        # ALONE WOULD NOT. BOTH UNIQUENESS CHECKS ARE OFF: update_or_create OWNS
+        # (name, origin), AND validate_constraints WOULD OTHERWISE REJECT EVERY
+        # ROW OF A RE-IMPORT VIA THE UniqueConstraint.
+        candidate = Transient(**values)
         try:
-            candidate.full_clean(exclude=["origin"], validate_unique=False)
+            candidate.full_clean(validate_unique=False, validate_constraints=False)
         except ValidationError as error:
             self.stderr.write(
                 self.style.WARNING(f"line {lineNumber}: {name} failed validation ({error.messages[0]}) — skipped")

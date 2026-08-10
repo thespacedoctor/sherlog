@@ -101,6 +101,25 @@ def test_import_origin_flag(csv_file):
 
 
 @pytest.mark.django_db
+def test_import_prefers_the_csv_origin_column(tmp_path):
+    path = tmp_path / "mixed.csv"
+    path.write_text(
+        "name,ra,decl,url,origin\n"
+        "111111111111111111,148.6,1.6,https://example.org/1,lasair\n"
+        "222222222222222222,151.3,2.8,https://example.org/2,ztf\n"
+        # BLANK CELL — FALLS BACK TO --origin
+        "333333333333333333,150.4,-2.5,https://example.org/3,\n",
+        encoding="utf-8",
+    )
+    call_command("import_transients", str(path), origin="fallback", stdout=StringIO())
+
+    origins = dict(Transient.objects.values_list("name", "origin"))
+    assert origins["111111111111111111"] == "lasair"
+    assert origins["222222222222222222"] == "ztf"
+    assert origins["333333333333333333"] == "fallback"
+
+
+@pytest.mark.django_db
 def test_import_dry_run_writes_nothing(csv_file):
     output = StringIO()
     call_command("import_transients", str(csv_file), dry_run=True, stdout=output)

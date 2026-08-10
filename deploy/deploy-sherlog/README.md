@@ -6,8 +6,16 @@ Ansible playbook that deploys sherlog to a Ubuntu
 ## Requirements
 
 ```bash
-ansible-galaxy collection install community.mysql
+ansible-galaxy collection install -r requirements.yml
 ```
+
+## Database
+
+`install-mariadb` installs and starts MariaDB, creates the `sherlog` database
+(utf8mb4) and the `sherlog` user with all privileges on it, using the
+`db_password` you pass in below. `install-webapp` then writes those same
+credentials into the environment file Apache reads, so the app finds the
+database with no further configuration.
 
 ## Run
 

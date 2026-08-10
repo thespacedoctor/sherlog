@@ -41,7 +41,10 @@ class Transient(TimeStampedModel):
         help_text="Declination in decimal degrees.",
     )
     name = models.CharField(max_length=30, help_text="Broker-assigned object name or ID.")
-    origin = models.CharField(max_length=30, help_text="Where the transient came from, e.g. 'lasair'.")
+    origin = models.CharField(
+        max_length=75,
+        help_text="Where the transient came from — a broker name or the URL of the filter that selected it.",
+    )
     url = models.URLField(max_length=200, blank=True, help_text="Object page at the origin broker.")
 
     class Meta:
