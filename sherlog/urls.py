@@ -10,5 +10,6 @@ urlpatterns = [
     # ADD YOUR OWN APPS' URLS BELOW. THE API IS KEPT ON ITS OWN /api/ PREFIX,
     # SEPARATE FROM THE SERVER-RENDERED FRONTEND.
     path("", include("apps.transients.urls")),
+    path("", include("apps.vetting.urls")),
     path("api/", include("apps.transients.api_urls")),
 ]

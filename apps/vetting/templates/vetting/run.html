@@ -1,0 +1,30 @@
+{% extends "django_fundamentals/layouts/app.html" %}
+
+{% block head_title %}Vetting {{ version }} &middot; {{ block.super }}{% endblock %}
+
+{% block content %}
+{% include "vetting/molecules/tabs.html" with tabs=tabs %}
+
+{# SAME PROGRESSIVE-ENHANCEMENT PATTERN AS THE TRANSIENT LIST: A PLAIN GET FORM #}
+{# THAT HTMX UPGRADES TO A LIVE, TABLE-ONLY SWAP.                               #}
+<form method="get"
+      class="mb-6 flex max-w-md items-center gap-2"
+      hx-get=""
+      hx-target="#transient-table"
+      hx-select="#transient-table"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-trigger="submit, keyup changed delay:300ms from:find input[name='q']">
+    <input type="search"
+           name="q"
+           value="{{ search_term }}"
+           placeholder="Search name or origin&hellip;"
+           aria-label="Search transients"
+           class="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">
+    <input type="hidden" name="sort" value="{{ sort_field }}">
+    <input type="hidden" name="dir" value="{{ sort_dir }}">
+    {% include "django_fundamentals/atoms/button.html" with label="Search" type="submit" %}
+</form>
+
+{% include "transients/_transient_table.html" %}
+{% endblock %}

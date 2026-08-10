@@ -1,5 +1,11 @@
 # Changes
 
+* **FEATURE**: added a human vetting workflow. The `sherlock_vetting` table records, per Sherlock version, whether each transient was classified correctly, by whom, with an optional comment and the rank of the correct host.
+* **FEATURE**: each version gets a vetting page with four tabbed tables — all transients, unvetted, correct and incorrect — each showing its count, and a sidebar entry under "Vetting runs".
+* **FEATURE**: transients opened from a vetting run gain a form with green "correct" and red "incorrect" buttons; submitting moves straight on to a random unvetted transient, or back to the run page once none are left.
+* **FEATURE**: added the `create_vetting_run` management command, which opens a run by creating one unvetted row per transient.
+* **REFACTOR**: the list search, sorting and pagination moved out of `TransientListView` into a reusable `SortableSearchableListMixin`, and the transient sky view and attribute table into a shared `transient_summary.html`, so the vetting pages reuse them rather than copying.
+
 * **FEATURE**: development can now run against either SQLite (default) or the local MariaDB via `DJANGO_DB`, with settings and secrets read from an uncommitted `.env`. Production is unchanged and always uses MariaDB.
 * **FEATURE**: added `scripts/create_dev_db.sh` to create the local MariaDB database, user and grant from the values in `.env`.
 * **ENHANCEMENT**: `import_transients` now takes each row's `origin` from the CSV when present, falling back to `--origin`.

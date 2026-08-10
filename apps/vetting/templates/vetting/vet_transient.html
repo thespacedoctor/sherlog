@@ -1,0 +1,74 @@
+{% extends "django_fundamentals/layouts/app.html" %}
+
+{% block head_title %}Vet {{ transient.name }} &middot; {{ block.super }}{% endblock %}
+
+{% block content %}
+{% include "transients/molecules/transient_summary.html" with transient=transient %}
+
+<form method="post" class="mt-6 rounded-lg border border-line p-4 sm:p-6">
+    {% csrf_token %}
+
+    <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-muted">
+            Did Sherlock get this right?
+        </h2>
+        <p class="text-sm text-muted">
+            {{ remaining }} left to vet in
+            <a href="{% url 'vetting_run' version=version %}" class="rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ version }}</a>
+        </p>
+    </div>
+
+    {% if form.non_field_errors %}
+        {% include "django_fundamentals/atoms/alert.html" with level="error" body=form.non_field_errors %}
+    {% endif %}
+
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div class="sm:col-span-2">
+            <label for="{{ form.user_comment.id_for_label }}" class="mb-1.5 block text-sm font-medium text-ink">{{ form.user_comment.label }}</label>
+            <textarea name="{{ form.user_comment.html_name }}"
+                      id="{{ form.user_comment.id_for_label }}"
+                      rows="3"
+                      placeholder="Anything worth noting? (optional)"
+                      class="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">{{ form.user_comment.value|default:"" }}</textarea>
+            {% for error in form.user_comment.errors %}<p class="mt-1 text-xs text-danger">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div>
+            <label for="{{ form.sherlock_correct_host.id_for_label }}" class="mb-1.5 block text-sm font-medium text-ink">{{ form.sherlock_correct_host.label }}</label>
+            <input type="number"
+                   min="1"
+                   name="{{ form.sherlock_correct_host.html_name }}"
+                   id="{{ form.sherlock_correct_host.id_for_label }}"
+                   value="{{ form.sherlock_correct_host.value|default:"" }}"
+                   class="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">
+            <p class="mt-1 text-xs text-muted">{{ form.sherlock_correct_host.help_text }}</p>
+            {% for error in form.sherlock_correct_host.errors %}<p class="mt-1 text-xs text-danger">{{ error }}</p>{% endfor %}
+        </div>
+    </div>
+
+    {# THE TWO BUTTONS ARE THE FORM'S SUBMITS; `verdict` TELLS THEM APART. THE  #}
+    {# BUTTON ATOM HAS NO GREEN VARIANT, SO THE PAIR ARE STYLED HERE ON THE     #}
+    {# success/danger TOKENS.                                                   #}
+    <div class="mt-6 flex flex-wrap gap-3">
+        <button type="submit" name="verdict" value="correct"
+                class="inline-flex items-center justify-center gap-2 rounded bg-success px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-success focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+            {% include "django_fundamentals/atoms/icon.html" with name="check" class="h-4 w-4" %}
+            Correct
+        </button>
+        <button type="submit" name="verdict" value="incorrect"
+                class="inline-flex items-center justify-center gap-2 rounded bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+            {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
+            Incorrect
+        </button>
+        {% if vetting.sherlock_correct is not None %}
+        <p class="self-center text-sm text-muted">
+            Already vetted as <strong class="text-ink">{{ vetting.verdict }}</strong>{% if vetting.user %} by {{ vetting.user.display_name }}{% endif %} — submitting replaces it.
+        </p>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_body %}
+{% include "transients/molecules/sky_view_scripts.html" %}
+{% endblock %}

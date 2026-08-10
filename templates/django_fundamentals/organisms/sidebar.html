@@ -1,0 +1,57 @@
+{% comment %}
+PROJECT OVERRIDE of django_fundamentals/organisms/sidebar.html.
+
+WHY: the package's sidebar is driven by the static DJANGO_FUNDAMENTALS_SIDEBAR_NAV
+setting, and its `nav_url` tag reverses names without arguments — neither can
+express one entry per Sherlock version. This copy keeps the package's nav loop
+exactly as-is and appends a database-driven "Vetting runs" section fed by
+apps.vetting.context_processors.vetting_runs.
+
+KEEP IN SYNC: re-check this against the package template after any
+`pip install -U django-fundamentals` that touches the chrome.
+{% endcomment %}
+<aside x-cloak
+       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+       class="fixed inset-y-0 left-0 z-sidebar flex w-sidebar transform flex-col border-r border-line bg-raised transition-transform duration-200 ease-out lg:top-navbar lg:translate-x-0"
+       aria-label="Sidebar navigation">
+
+    {# DRAWER HEADER — MOBILE ONLY; ON DESKTOP THE NAVBAR ALREADY SHOWS THE BRAND #}
+    <div class="flex h-navbar items-center justify-between border-b border-line px-4 lg:hidden">
+        {% include "django_fundamentals/molecules/brand_mark.html" %}
+        <button type="button" @click="sidebarOpen = false"
+                class="inline-flex h-9 w-9 items-center justify-center rounded text-muted hover:bg-sunken hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                aria-label="Close navigation">
+            {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-6 w-6" %}
+        </button>
+    </div>
+
+    <nav class="flex-1 space-y-1 overflow-y-auto p-3">
+        {% for item in df_sidebar_nav %}
+            {% if item.section %}
+                <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted first:pt-1">
+                    {{ item.section }}
+                </p>
+            {% else %}
+                {% include "django_fundamentals/molecules/nav_item.html" with item=item %}
+            {% endif %}
+        {% endfor %}
+
+        {# --- SHERLOG: ONE ENTRY PER SHERLOCK VERSION WITH A VETTING RUN --- #}
+        {% if vetting_runs %}
+            <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted">Vetting runs</p>
+            {% for run in vetting_runs %}
+                <a href="{{ run.url }}"
+                   {% if request.path == run.url %}aria-current="page"{% endif %}
+                   class="group flex items-center gap-3 rounded px-3 py-2 text-sm transition-colors
+                          {% if request.path == run.url %}bg-brand/10 font-medium text-brand{% else %}text-muted hover:bg-sunken hover:text-ink{% endif %}">
+                    {% include "django_fundamentals/atoms/icon.html" with name="check" %}
+                    <span class="truncate">{{ run.label }}</span>
+                </a>
+            {% endfor %}
+        {% endif %}
+    </nav>
+
+    <div class="border-t border-line p-3">
+        <p class="px-3 text-xs text-muted">v{{ df_version }}</p>
+    </div>
+</aside>

@@ -1,0 +1,25 @@
+{% comment %}
+VETTING TAB STRIP MOLECULE — THE FOUR VIEWS OF A RUN, EACH WITH ITS COUNT.
+
+Mirrors the look of django-fundamentals' settings tab rail, but horizontal and
+data-driven: the view supplies `tabs` as dicts of name/label/count/url/is_current.
+
+USAGE:
+    {% include "vetting/molecules/tabs.html" with tabs=tabs %}
+{% endcomment %}
+<nav class="mb-6 border-b border-line" aria-label="Vetting tables">
+    <ul class="-mb-px flex gap-1 overflow-x-auto">
+        {% for tab in tabs %}
+        <li>
+            <a href="{{ tab.url }}"
+               {% if tab.is_current %}aria-current="page"{% endif %}
+               class="flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm transition-colors
+                      {% if tab.is_current %}border-brand font-medium text-brand{% else %}border-transparent text-muted hover:border-line hover:text-ink{% endif %}">
+                <span>{{ tab.label }}</span>
+                <span class="rounded-full px-2 py-0.5 text-xs tabular-nums
+                             {% if tab.is_current %}bg-brand/10 text-brand{% else %}bg-sunken text-muted{% endif %}">{{ tab.count }}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>

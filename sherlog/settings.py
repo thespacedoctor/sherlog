@@ -57,7 +57,7 @@ DJANGO_FUNDAMENTALS_SIDEBAR_NAV = [
     {"label": "Transients", "url_name": "transient_list", "icon": "eye"},
 ]
 
-INSTALLED_APPS = [*BASE_INSTALLED_APPS, "apps.transients"]
+INSTALLED_APPS = [*BASE_INSTALLED_APPS, "apps.transients", "apps.vetting"]
 MIDDLEWARE = [*BASE_MIDDLEWARE]
 AUTHENTICATION_BACKENDS = BASE_AUTHENTICATION_BACKENDS
 REST_FRAMEWORK = BASE_REST_FRAMEWORK
@@ -70,7 +70,15 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
-        "OPTIONS": {"context_processors": BASE_TEMPLATE_CONTEXT_PROCESSORS},
+        "OPTIONS": {
+            "context_processors": [
+                *BASE_TEMPLATE_CONTEXT_PROCESSORS,
+                # FEEDS THE "Vetting runs" SECTION OF THE SIDEBAR, WHICH THE
+                # STATIC DJANGO_FUNDAMENTALS_SIDEBAR_NAV CANNOT EXPRESS — SEE
+                # templates/django_fundamentals/organisms/sidebar.html
+                "apps.vetting.context_processors.vetting_runs",
+            ]
+        },
     }
 ]
 

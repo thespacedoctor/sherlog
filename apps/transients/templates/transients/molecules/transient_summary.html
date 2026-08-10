@@ -1,0 +1,64 @@
+{% comment %}
+TRANSIENT SUMMARY MOLECULE — THE SKY VIEW AND ATTRIBUTES TABLE FOR ONE
+TRANSIENT, SHARED BY THE PLAIN DETAIL PAGE AND THE VETTING PAGE SO THE TWO
+CANNOT DRIFT APART.
+
+THE PAGE INCLUDING THIS MUST ALSO LOAD ALADIN — SEE
+transients/molecules/sky_view_scripts.html.
+
+USAGE:
+    {% include "transients/molecules/transient_summary.html" with transient=transient %}
+{% endcomment %}
+<div class="mb-6">
+    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
+</div>
+
+<div class="overflow-hidden rounded-lg border border-line">
+    <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-line">
+            <tr class="hover:bg-raised">
+                <th scope="row" class="w-40 bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">UUID</th>
+                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.uuid }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Name</th>
+                <td class="px-4 py-2.5">{{ transient.name }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Origin</th>
+                <td class="px-4 py-2.5">{{ transient.origin }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">RA</th>
+                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Dec</th>
+                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">URL</th>
+                <td class="px-4 py-2.5">
+                    {% if transient.url %}
+                        <a href="{{ transient.url }}" rel="noopener noreferrer" target="_blank"
+                           class="inline-flex items-center gap-1.5 rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+                            <span class="break-all">{{ transient.url }}</span>
+                            {% include "django_fundamentals/atoms/icon.html" with name="external" class="h-3.5 w-3.5 shrink-0" %}
+                        </a>
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Added</th>
+                <td class="px-4 py-2.5 text-muted">{{ transient.created_at }}</td>
+            </tr>
+            <tr class="hover:bg-raised">
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Updated</th>
+                <td class="px-4 py-2.5 text-muted">{{ transient.updated_at }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+

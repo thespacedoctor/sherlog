@@ -1,61 +1,9 @@
 {% extends "django_fundamentals/layouts/app.html" %}
-{% load static %}
 
 {% block head_title %}{{ transient.name }} &middot; {{ block.super }}{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
-</div>
-
-<div class="overflow-hidden rounded-lg border border-line">
-    <table class="w-full text-left text-sm">
-        <tbody class="divide-y divide-line">
-            <tr class="hover:bg-raised">
-                <th scope="row" class="w-40 bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">UUID</th>
-                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.uuid }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Name</th>
-                <td class="px-4 py-2.5">{{ transient.name }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Origin</th>
-                <td class="px-4 py-2.5">{{ transient.origin }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">RA</th>
-                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Dec</th>
-                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">URL</th>
-                <td class="px-4 py-2.5">
-                    {% if transient.url %}
-                        <a href="{{ transient.url }}" rel="noopener noreferrer" target="_blank"
-                           class="inline-flex items-center gap-1.5 rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
-                            <span class="break-all">{{ transient.url }}</span>
-                            {% include "django_fundamentals/atoms/icon.html" with name="external" class="h-3.5 w-3.5 shrink-0" %}
-                        </a>
-                    {% else %}
-                        <span class="text-muted">&mdash;</span>
-                    {% endif %}
-                </td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Added</th>
-                <td class="px-4 py-2.5 text-muted">{{ transient.created_at }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Updated</th>
-                <td class="px-4 py-2.5 text-muted">{{ transient.updated_at }}</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+{% include "transients/molecules/transient_summary.html" with transient=transient %}
 
 <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
     <a href="{% url 'transient_list' %}" class="rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">&larr; All transients</a>
@@ -64,12 +12,6 @@
 </div>
 {% endblock %}
 
-{% comment %}
-ALADIN IS A 1.8 MB BUNDLE, SO IT IS LOADED HERE RATHER THAN IN THE BASE LAYOUT —
-ONLY THIS PAGE SHOWS A SKY VIEW. CDS PUBLISHES NO WORKING PINNED-VERSION PATH
-(/api/v3/<version>/aladin.js IS A 404), SO "latest" IS THE ONLY OPTION.
-{% endcomment %}
 {% block extra_body %}
-<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
-<script src="{% static 'js/sky_view.js' %}" defer></script>
+{% include "transients/molecules/sky_view_scripts.html" %}
 {% endblock %}

@@ -3,6 +3,15 @@ THE TRANSIENT TABLE ON ITS OWN. RENDERED INSIDE transient_list.html FOR A NORMAL
 REQUEST AND RETURNED ALONE FOR AN HTMX REQUEST, SO SEARCHING, SORTING AND PAGING
 SWAP JUST THIS BLOCK. EVERY LINK IS A REAL href AS WELL AS AN hx-get, SO THE
 PAGE STILL WORKS WITH JAVASCRIPT DISABLED.
+
+ALSO SERVES THE VETTING RUN TABS. THE ROWS THERE ARE STILL Transient OBJECTS —
+THE VETTING JOIN IS ANNOTATED ON AS `vetted_as` — SO THE MARKUP, SORTING AND
+SEARCHING ARE SHARED RATHER THAN COPIED.
+
+PARAMETERS:
+    show_vetted_as   -- True to add the "Vetted as" column
+    vetting_version  -- when set, rows link to that version's vetting page
+                        instead of the plain transient page
 {% endcomment %}
 <div id="transient-table"
      hx-target="this"
@@ -25,23 +34,48 @@ PAGE STILL WORKS WITH JAVASCRIPT DISABLED.
                         </a>
                     </th>
                     {% endfor %}
+                    {% if show_vetted_as %}
+                    <th class="px-4 py-2.5 font-medium">Vetted as</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
                 {% for transient in transients %}
                 <tr class="hover:bg-raised">
                     <td class="whitespace-nowrap px-4 py-2.5">
-                        <a href="{{ transient.get_absolute_url }}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ transient.uuid }}</a>
+                        {% if vetting_version %}
+                            {% url 'vetting_transient' version=vetting_version uuid=transient.uuid as row_url %}
+                        {% else %}
+                            {% url 'transient_detail' uuid=transient.uuid as row_url %}
+                        {% endif %}
+                        <a href="{{ row_url }}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ transient.uuid }}</a>
                     </td>
                     <td class="whitespace-nowrap px-4 py-2.5">{{ transient.name }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.origin }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.created_at|date:"Y-m-d H:i" }}</td>
+                    {% if show_vetted_as %}
+                    <td class="whitespace-nowrap px-4 py-2.5">
+                        {% if transient.vetted_as is True %}
+                            <span class="inline-flex items-center gap-1.5 text-success">
+                                {% include "django_fundamentals/atoms/icon.html" with name="check" class="h-4 w-4" %}
+                                <span class="sr-only">Correct</span>
+                            </span>
+                        {% elif transient.vetted_as is False %}
+                            <span class="inline-flex items-center gap-1.5 text-danger">
+                                {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
+                                <span class="sr-only">Incorrect</span>
+                            </span>
+                        {% else %}
+                            <span class="text-muted">not vetted</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                    <td colspan="{% if show_vetted_as %}7{% else %}6{% endif %}" class="px-4 py-8 text-center text-muted">
                         {% if search_term %}No transients match &ldquo;{{ search_term }}&rdquo;.{% else %}No transients yet.{% endif %}
                     </td>
                 </tr>
