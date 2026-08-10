@@ -48,6 +48,7 @@ class Transient(TimeStampedModel):
     url = models.URLField(max_length=200, blank=True, help_text="Object page at the origin broker.")
 
     class Meta:
+        db_table = "transients"
         ordering = ["name"]
         constraints = [
             # ONE ROW PER OBJECT PER BROKER. THIS IS WHAT MAKES THE IMPORTER

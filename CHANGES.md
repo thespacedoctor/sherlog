@@ -1,5 +1,7 @@
 # Changes
 
+* **REFACTOR**: the transient table is now named `transients` rather than Django's default `transients_transient`, matching the explicitly named `sherlock_vetting` table.
+
 * **FEATURE**: added a human vetting workflow. The `sherlock_vetting` table records, per Sherlock version, whether each transient was classified correctly, by whom, with an optional comment and the rank of the correct host.
 * **FEATURE**: each version gets a vetting page with four tabbed tables — all transients, unvetted, correct and incorrect — each showing its count, and a sidebar entry under "Vetting runs".
 * **FEATURE**: transients opened from a vetting run gain a form with green "correct" and red "incorrect" buttons; submitting moves straight on to a random unvetted transient, or back to the run page once none are left.
