@@ -1,0 +1,30 @@
+{% comment %}
+SKY VIEW MOLECULE — AN ALADIN LITE v3 VIEW OF ONE SKY POSITION.
+
+MARKUP ONLY: static/js/sky_view.js FINDS EVERY [data-sky-view] ON THE PAGE,
+PICKS THE DEEPEST SURVEY COVERING THE POSITION AND DRAWS THE RED MARKER. THE
+PAGE INCLUDING THIS MUST LOAD aladin.js AND sky_view.js — SEE
+transients/transient_detail.html.
+
+USAGE:
+    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
+
+PARAMETERS:
+    ra     -- right ascension in decimal degrees (required)
+    decl   -- declination in decimal degrees (required)
+    label  -- name used in the accessible label (optional)
+{% endcomment %}
+{# HEIGHT TRACKS THE VIEWPORT BETWEEN A 320px FLOOR AND AN 800px (50rem) CEILING. #}
+<div data-sky-view
+     data-ra="{{ ra|stringformat:'f' }}"
+     data-decl="{{ decl|stringformat:'f' }}"
+     data-label="{{ label|default:'' }}"
+     role="img"
+     aria-label="Sky image centred on {% if label %}{{ label }}{% else %}the transient{% endif %}, marked with a red circle."
+     class="relative h-[clamp(20rem,60vh,50rem)] w-full overflow-hidden rounded-lg border border-line bg-sunken">
+    {# REPLACED BY THE ALADIN CANVAS ONCE THE SCRIPT RUNS; STAYS PUT IF IT CANNOT. #}
+    <p data-sky-view-status
+       class="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted">
+        Loading sky image&hellip;
+    </p>
+</div>

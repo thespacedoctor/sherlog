@@ -150,6 +150,23 @@ def test_detail_page_loads_for_anonymous(client, transient):
 
 
 @pytest.mark.django_db
+def test_detail_page_carries_the_sky_view(client, transient):
+    content = client.get(f"/transient/{transient.uuid}/").content.decode()
+    assert "data-sky-view" in content
+    # THE COORDINATES THE JAVASCRIPT READS MUST BE THE MODEL'S OWN
+    assert 'data-ra="148.612010"' in content
+    assert 'data-decl="1.609392"' in content
+    assert "aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" in content
+    assert "js/sky_view.js" in content
+
+
+@pytest.mark.django_db
+def test_only_the_detail_page_loads_aladin(client, transient):
+    for path in ("/transient/", "/transients/"):
+        assert b"aladin.js" not in client.get(path).content
+
+
+@pytest.mark.django_db
 def test_list_page_paginates_at_fifty(client):
     make_transients(60)
     response = client.get("/transients/")

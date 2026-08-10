@@ -1,8 +1,13 @@
 {% extends "django_fundamentals/layouts/app.html" %}
+{% load static %}
 
 {% block head_title %}{{ transient.name }} &middot; {{ block.super }}{% endblock %}
 
 {% block content %}
+<div class="mb-6">
+    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
+</div>
+
 <div class="overflow-hidden rounded-lg border border-line">
     <table class="w-full text-left text-sm">
         <tbody class="divide-y divide-line">
@@ -57,4 +62,14 @@
     <span class="text-muted">&middot;</span>
     <a href="{% url 'api_transient_detail' uuid=transient.uuid %}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{% url 'api_transient_detail' uuid=transient.uuid %}</a>
 </div>
+{% endblock %}
+
+{% comment %}
+ALADIN IS A 1.8 MB BUNDLE, SO IT IS LOADED HERE RATHER THAN IN THE BASE LAYOUT —
+ONLY THIS PAGE SHOWS A SKY VIEW. CDS PUBLISHES NO WORKING PINNED-VERSION PATH
+(/api/v3/<version>/aladin.js IS A 404), SO "latest" IS THE ONLY OPTION.
+{% endcomment %}
+{% block extra_body %}
+<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+<script src="{% static 'js/sky_view.js' %}" defer></script>
 {% endblock %}
