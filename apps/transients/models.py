@@ -87,3 +87,43 @@ class Transient(TimeStampedModel):
         ```
         """
         return reverse("transient_detail", kwargs={"uuid": self.uuid})
+
+    def crossmatch_tree(self):
+        """*Sherlock's ranked matches, each carrying the matches merged into it*
+
+        Sherlock records a source it matched in more than one catalogue as a
+        single ranked "lead" row plus one child row per catalogue, the children
+        pointing back at the lead through ``merged_rank``. This rebuilds that
+        two-level shape in one query, so a template can list the ranked sources
+        and reveal the individual matches behind any of them.
+
+        Leads come back in rank order. A lead that merged nothing has an empty
+        ``matches`` list.
+
+        **Return:**
+
+        - ``tree`` -- list of ``(lead, matches)`` pairs, best-ranked first
+
+        **Usage:**
+
+        ```django
+        {% for lead, matches in transient.crossmatch_tree %}…{% endfor %}
+        ```
+        """
+        # IMPORTED HERE, NOT AT MODULE LEVEL: apps.sherlock IMPORTS THIS MODULE,
+        # SO IMPORTING IT BACK AT THE TOP WOULD BE A CIRCULAR IMPORT.
+        from apps.sherlock.models import SherlockCrossmatch
+
+        leads = []
+        children = {}
+        # ONE QUERY FOR EVERY ROW BELONGING TO THIS TRANSIENT — LEADS AND
+        # CHILDREN TOGETHER — THEN SORTED OUT IN PYTHON, SO THE PAGE COSTS ONE
+        # QUERY RATHER THAN ONE PER RANKED SOURCE.
+        for match in SherlockCrossmatch.objects.filter(transient=self):
+            if match.rank is not None:
+                leads.append(match)
+            elif match.merged_rank is not None:
+                children.setdefault(match.merged_rank, []).append(match)
+
+        leads.sort(key=lambda match: match.rank)
+        return [(lead, children.get(lead.rank, [])) for lead in leads]

@@ -1,7 +1,7 @@
 {% comment %}
-TRANSIENT SUMMARY MOLECULE — THE SKY VIEW AND ATTRIBUTES TABLE FOR ONE
-TRANSIENT, SHARED BY THE PLAIN DETAIL PAGE AND THE VETTING PAGE SO THE TWO
-CANNOT DRIFT APART.
+TRANSIENT SUMMARY MOLECULE — THE ATTRIBUTES TABLE, SKY VIEW AND SHERLOCK
+CROSSMATCHES FOR ONE TRANSIENT, SHARED BY THE PLAIN DETAIL PAGE AND THE VETTING
+PAGE SO THE TWO CANNOT DRIFT APART.
 
 THE PAGE INCLUDING THIS MUST ALSO LOAD ALADIN — SEE
 transients/molecules/sky_view_scripts.html.
@@ -9,11 +9,7 @@ transients/molecules/sky_view_scripts.html.
 USAGE:
     {% include "transients/molecules/transient_summary.html" with transient=transient %}
 {% endcomment %}
-<div class="mb-6">
-    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
-</div>
-
-<div class="overflow-hidden rounded-lg border border-line">
+<div class="mb-6 overflow-hidden rounded-lg border border-line">
     <table class="w-full text-left text-sm">
         <tbody class="divide-y divide-line">
             <tr class="hover:bg-raised">
@@ -71,4 +67,10 @@ USAGE:
         </tbody>
     </table>
 </div>
+
+<div class="mb-6">
+    {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}
+</div>
+
+{% include "transients/molecules/crossmatch_table.html" with transient=transient %}
 

@@ -57,7 +57,7 @@ DJANGO_FUNDAMENTALS_SIDEBAR_NAV = [
     {"label": "Transients", "url_name": "transient_list", "icon": "eye"},
 ]
 
-INSTALLED_APPS = [*BASE_INSTALLED_APPS, "apps.transients", "apps.vetting"]
+INSTALLED_APPS = [*BASE_INSTALLED_APPS, "apps.transients", "apps.vetting", "apps.sherlock"]
 MIDDLEWARE = [*BASE_MIDDLEWARE]
 AUTHENTICATION_BACKENDS = BASE_AUTHENTICATION_BACKENDS
 REST_FRAMEWORK = BASE_REST_FRAMEWORK

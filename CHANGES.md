@@ -1,5 +1,10 @@
 # Changes
 
+* **FEATURE**: every transient page now lists the sources Sherlock matched against the transient, read straight from Sherlock's own `sherlock_crossmatches` table. One row per ranked source, best first; where Sherlock merged the same source across several catalogues the row is marked `multiple` and expands to show the individual catalogue matches behind it.
+* **FEATURE**: above that table, Sherlock's verdict from `sherlock_classifications` — the classification, its one-line summary and its annotation.
+* **REFACTOR**: the transient summary now puts the attributes table above the Aladin sky view, with the crossmatches below it.
+* **FEATURE**: added the `sherlock` app, holding unmanaged read-only mirrors of `sherlock_crossmatches` and `sherlock_classifications`. Sherlock creates and owns both tables, so Django never migrates them; the test suite builds them with the schema editor instead.
+
 * **FEATURE**: transients gained a `sherlock_classification` field (10 characters, NULL until Sherlock has classified the transient), exposed in the API, searchable and sortable in the transient and vetting tables, and shown on the detail page and in the admin. The API spells "unclassified" as `null` and rejects `""`, so there is only ever one empty state.
 
 * **REFACTOR**: the transient table is now named `transients` rather than Django's default `transients_transient`, matching the explicitly named `sherlock_vetting` table.
