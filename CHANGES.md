@@ -1,6 +1,6 @@
 # Changes
 
-* **FEATURE**: transients gained a `sherlock_classification` field (10 characters, blank when unclassified), exposed in the API, searchable and sortable in the transient and vetting tables, and shown on the detail page and in the admin.
+* **FEATURE**: transients gained a `sherlock_classification` field (10 characters, NULL until Sherlock has classified the transient), exposed in the API, searchable and sortable in the transient and vetting tables, and shown on the detail page and in the admin. The API spells "unclassified" as `null` and rejects `""`, so there is only ever one empty state.
 
 * **REFACTOR**: the transient table is now named `transients` rather than Django's default `transients_transient`, matching the explicitly named `sherlock_vetting` table.
 

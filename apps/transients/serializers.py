@@ -13,6 +13,13 @@ class TransientSerializer(serializers.ModelSerializer):
     ```
     """
 
+    # blank=True ON THE MODEL (WHICH THE ADMIN FORM NEEDS) WOULD OTHERWISE MAKE
+    # ModelSerializer ACCEPT "" AS WELL AS null, PUTTING BACK THE SECOND EMPTY
+    # STATE. THROUGH THE API, "UNCLASSIFIED" IS SPELT null AND ONLY null.
+    sherlock_classification = serializers.CharField(
+        max_length=10, required=False, allow_null=True, allow_blank=False
+    )
+
     class Meta:
         model = Transient
         fields = [

@@ -60,9 +60,9 @@ def test_absolute_url_points_at_the_detail_page(transient):
     assert transient.get_absolute_url() == f"/transient/{transient.uuid}/"
 
 
-def test_sherlock_classification_defaults_to_blank(transient):
-    # BLANK RATHER THAN NULL, SO AN UNCLASSIFIED TRANSIENT HAS ONE EMPTY STATE.
-    assert transient.sherlock_classification == ""
+def test_sherlock_classification_defaults_to_null(transient):
+    # NULL, NOT "", SO "SHERLOCK HAS NOT RUN" IS ITS OWN STATE.
+    assert transient.sherlock_classification is None
 
 
 @pytest.mark.django_db
@@ -268,7 +268,7 @@ def test_api_list_search_and_ordering(client):
 @pytest.mark.django_db
 def test_api_exposes_the_classification_and_accepts_a_write(client, transient):
     response = client.get(f"/api/transient/{transient.uuid}/")
-    assert response.json()["sherlock_classification"] == ""
+    assert response.json()["sherlock_classification"] is None
 
     user = get_user_model().objects.create_user(username="dave", email="dave@example.org", password="pw")
     client.force_login(user)
@@ -280,6 +280,24 @@ def test_api_exposes_the_classification_and_accepts_a_write(client, transient):
     assert response.status_code == 200
     transient.refresh_from_db()
     assert transient.sherlock_classification == "SN"
+
+    # CLEARING IT MEANS null; "" IS REJECTED RATHER THAN STORED AS A SECOND
+    # EMPTY STATE.
+    response = client.patch(
+        f"/api/transient/{transient.uuid}/",
+        data={"sherlock_classification": None},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    transient.refresh_from_db()
+    assert transient.sherlock_classification is None
+
+    response = client.patch(
+        f"/api/transient/{transient.uuid}/",
+        data={"sherlock_classification": ""},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
 
 
 @pytest.mark.django_db
