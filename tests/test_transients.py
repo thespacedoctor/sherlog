@@ -202,6 +202,7 @@ def test_detail_page_offers_every_reference_catalogue(client, transient):
         "panstarrs-dr1",
         "milliquas",
         "lasr",
+        "lasr-agn",
         "twomass",
         "desi-dr1",
     ):
