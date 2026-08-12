@@ -54,6 +54,27 @@ const RANK_COLOURS = [
 ];
 const RANK_OTHER_COLOUR = "#94a3b8"; // RANK 9 AND BEYOND SHARE ONE MUTED STEP
 
+// CDS'S PROGRESSIVE CATALOGUE SERVICE — LEVEL-OF-DETAIL AWARE, SO THE CATALOGUES
+// SERVED FROM HERE KEEP DRAWING HOWEVER FAR THE VIEW IS PANNED OR ZOOMED.
+const HIPS_CAT_BASE = "https://hipscat.cds.unistra.fr/HiPSCatService";
+// THE DESI LEGACY SURVEYS HAVE NO CATALOGUE HiPS AT CDS — ONLY THE IMAGERY, WHICH
+// IS ALREADY THE FIRST ENTRY IN SURVEY_CHAIN. THE SOURCES COME FROM NOIRLab'S CONE
+// SEARCH INSTEAD, WHICH SENDS NO CORS HEADERS AND SO HAS TO GO THROUGH ALADIN'S
+// PROXY — SEE THE useProxy ARGUMENT IN THE BUILDER BELOW.
+const DESI_DR10_SCS_URL = "https://datalab.noirlab.edu/scs/ls_dr10/tractor";
+// CONE RADIUS FOR THE CATALOGUES FETCHED ONCE RATHER THAN PROGRESSIVELY, IN
+// DEGREES. WIDER THAN FIELD_OF_VIEW_DEG SO A SMALL PAN STILL HAS SOURCES IN IT.
+const CATALOGUE_CONE_RADIUS_DEG = 0.05;
+// DESI GETS A TIGHTER CONE THAN THE REST BECAUSE ITS CONE SEARCH RETURNS EVERY
+// TRACTOR COLUMN — ABOUT 150 OF THEM — SO EACH SOURCE COSTS ~3.4 kB. AT 0.05 deg
+// THAT IS A 4.6 MB RESPONSE; AT 0.025 deg IT IS 0.5 MB, WHICH STILL COMFORTABLY
+// COVERS THE DEFAULT FIELD OF VIEW.
+const DESI_CONE_RADIUS_DEG = 0.025;
+// ALADIN DRAWS EACH MARKER ONTO A CANVAS THIS MANY PIXELS SQUARE WITH A 2px
+// STROKE, SO AT ITS DEFAULT OF 8 A RHOMB AND A CIRCLE ARE THE SAME LITTLE RING.
+// 12 IS THE POINT AT WHICH THE SHAPES READ AS THEMSELVES.
+const CATALOGUE_SOURCE_SIZE = 12;
+
 const OVERLAY_DATA_ID = "sky-view-crossmatches";
 // hide | top | merged | all — WHAT THE PILL OVER THE VIEW SWITCHES BETWEEN.
 const DEFAULT_MODE = "top";
@@ -440,6 +461,165 @@ function wireSelection(aladin, sky) {
 }
 
 /**
+ * HOW TO FETCH EACH REFERENCE CATALOGUE THE TEMPLATE OFFERS, KEYED BY THE id IN
+ * ITS data-sky-view-catalogue ATTRIBUTE. THE TEMPLATE OWNS THE LIST, THE NAMES
+ * AND THE COLOURS; THIS ONLY KNOWS WHERE THE SOURCES COME FROM.
+ *
+ * EVERY BUILDER RETURNS ITS CATALOGUE SYNCHRONOUSLY AND FILLS IT IN LATER, SO
+ * THE OBJECT CAN BE HANDED TO aladin.addCatalog() STRAIGHT AWAY. `progressive`
+ * MARKS THE TWO THAT STREAM BY LEVEL OF DETAIL AND SO NEVER "FINISH" LOADING —
+ * THE OTHER THREE ARE ONE-SHOT CONE SEARCHES THAT REPORT BACK THROUGH THEIR
+ * SUCCESS/ERROR CALLBACKS.
+ */
+const CATALOGUE_BUILDERS = {
+    "desi-dr10": {
+        progressive: false,
+        build: (ra, decl, options, onLoad, onFail) => {
+            const url = `${DESI_DR10_SCS_URL}?RA=${ra}&DEC=${decl}&SR=${DESI_CONE_RADIUS_DEG}`;
+            // THE LAST ARGUMENT IS useProxy. NOIRLab SENDS NO CORS HEADERS, SO
+            // WITHOUT IT THE BROWSER BLOCKS THE REQUEST; PASSING IT EXPLICITLY
+            // ALSO SKIPS THE DIRECT ATTEMPT ALADIN WOULD OTHERWISE MAKE FIRST.
+            return A.catalogFromURL(url, options, onLoad, onFail, true);
+        },
+    },
+    "gaia-dr3": {
+        progressive: true,
+        build: (ra, decl, options) => A.catalogHiPS(`${HIPS_CAT_BASE}/I/355/gaiadr3`, options),
+    },
+    "sdss-dr12": {
+        // CDS'S PROGRESSIVE CATALOGUE SERVICE STOPS AT DR12 — THERE IS NO DR16 OR
+        // LATER HiPS TO POINT AT, WHICH IS WHY THE LABEL SAYS DR12.
+        progressive: true,
+        build: (ra, decl, options) => A.catalogHiPS(`${HIPS_CAT_BASE}/V/147/sdss12`, options),
+    },
+    simbad: {
+        progressive: false,
+        build: (ra, decl, options, onLoad, onFail) =>
+            A.catalogFromSimbad(`${ra} ${decl}`, CATALOGUE_CONE_RADIUS_DEG, options, onLoad, onFail),
+    },
+    ned: {
+        progressive: false,
+        build: (ra, decl, options, onLoad, onFail) =>
+            A.catalogFromNED(`${ra} ${decl}`, CATALOGUE_CONE_RADIUS_DEG, options, onLoad, onFail),
+    },
+};
+
+// A SHAPE PER CATALOGUE AS WELL AS A COLOUR: THE RANK CIRCLES ALREADY SPAN MOST
+// OF THE HUES, SO SHAPE IS WHAT KEEPS TWO OVERLAYS APART WHEN THEY SIT CLOSE.
+const CATALOGUE_SHAPES = {
+    "desi-dr10": "square",
+    "gaia-dr3": "circle",
+    "sdss-dr12": "triangle",
+    simbad: "rhomb",
+    ned: "plus",
+};
+
+/**
+ * WIRE THE REFERENCE-CATALOGUE CHECKBOXES ABOVE THE SKY VIEW.
+ *
+ * NOTHING IS FETCHED UNTIL A BOX IS FIRST TICKED — THREE OF THE FIVE ARE CONE
+ * SEARCHES AND DESI ALONE IS HALF A MEGABYTE — AFTER WHICH THE CATALOGUE IS KEPT
+ * AND MERELY SHOWN OR HIDDEN, SO TOGGLING IT AGAIN COSTS NOTHING.
+ */
+function wireCatalogues(container, aladin, ra, decl) {
+    const list = document.querySelector("[data-sky-view-catalogues]");
+    if (!list) {
+        return;
+    }
+    // NOTHING TO TICK UNTIL THERE IS A VIEW TO DRAW INTO.
+    list.hidden = false;
+
+    // id -> CATALOGUE, ONCE BUILT. AN id PRESENT WITH A null VALUE IS IN FLIGHT:
+    // A FAST DOUBLE-CLICK MUST NOT START A SECOND FETCH.
+    const loaded = new Map();
+
+    for (const input of list.querySelectorAll("[data-sky-view-catalogue]")) {
+        const id = input.dataset.skyViewCatalogue;
+        const entry = CATALOGUE_BUILDERS[id];
+        const label = input.closest("label");
+        const state = label.querySelector("[data-sky-view-catalogue-state]");
+        // WHAT THE LAYERS CONTROL WILL CALL THIS CATALOGUE. READ NOW, WHILE THE
+        // STATE SPAN IS STILL EMPTY, SO "loading…" NEVER LANDS IN THE NAME.
+        const name = label.textContent.trim();
+
+        if (!entry) {
+            console.warn(`[sky_view] no builder for the "${id}" catalogue`);
+            input.disabled = true;
+            continue;
+        }
+
+        function say(message) {
+            if (!state) {
+                return;
+            }
+            state.textContent = message;
+            state.hidden = !message;
+        }
+
+        input.addEventListener("change", () => {
+            if (loaded.has(id)) {
+                const catalogue = loaded.get(id);
+                // STILL IN FLIGHT — THE change THAT STARTED IT WILL SHOW IT.
+                if (catalogue) {
+                    if (input.checked) {
+                        catalogue.show();
+                    } else {
+                        catalogue.hide();
+                    }
+                }
+                return;
+            }
+            if (!input.checked) {
+                return;
+            }
+
+            loaded.set(id, null);
+            say("loading…");
+
+            function settle(catalogue) {
+                loaded.set(id, catalogue);
+                say("");
+                // THE BOX MAY HAVE BEEN UNTICKED WHILE THE REQUEST WAS IN FLIGHT.
+                if (!input.checked) {
+                    catalogue.hide();
+                }
+            }
+
+            function fail(error) {
+                console.warn(`[sky_view] could not load the "${id}" catalogue`, error);
+                // DROPPED FROM THE CACHE SO TICKING THE BOX AGAIN RETRIES.
+                loaded.delete(id);
+                input.checked = false;
+                say("unavailable");
+            }
+
+            const options = {
+                name,
+                color: input.dataset.colour,
+                shape: CATALOGUE_SHAPES[id],
+                sourceSize: CATALOGUE_SOURCE_SIZE,
+                onClick: "showTable",
+            };
+
+            let catalogue;
+            try {
+                catalogue = entry.build(ra, decl, options, settle, fail);
+                aladin.addCatalog(catalogue);
+            } catch (error) {
+                fail(error);
+                return;
+            }
+
+            // A PROGRESSIVE CATALOGUE HAS NO "LOADED" MOMENT TO WAIT FOR: IT KEEPS
+            // FETCHING AS THE VIEW MOVES, SO IT IS SETTLED THE INSTANT IT EXISTS.
+            if (entry.progressive) {
+                settle(catalogue);
+            }
+        });
+    }
+}
+
+/**
  * BUILD ONE ALADIN VIEW INSIDE `container`, CENTRED ON ITS data-ra/data-decl.
  */
 async function renderSkyView(container) {
@@ -494,6 +674,11 @@ async function renderSkyView(container) {
             legend.hidden = false;
         }
     }
+
+    // UNLIKE THE LEGEND THIS IS NOT CONDITIONAL ON THERE BEING CIRCLES: THE
+    // REFERENCE CATALOGUES ARE WORTH A LOOK PRECISELY WHEN SHERLOCK MATCHED
+    // NOTHING.
+    wireCatalogues(container, aladin, ra, decl);
 
     keepCanvasFitted(container, aladin);
 
