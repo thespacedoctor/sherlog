@@ -1,3 +1,4 @@
+import re
 import uuid as uuidlib
 from io import StringIO
 
@@ -184,6 +185,25 @@ def test_detail_page_carries_the_sky_view(client, transient):
     assert 'data-decl="1.609392"' in content
     assert "vendor/aladin/aladin-3.8.2.js" in content
     assert "js/sky_view.js" in content
+
+
+@pytest.mark.django_db
+def test_detail_page_offers_every_reference_catalogue(client, transient):
+    content = client.get(f"/transient/{transient.uuid}/").content.decode()
+    assert "data-sky-view-catalogues" in content
+    # THE ids HERE ARE THE KEYS sky_view.js LOOKS ITS BUILDERS UP BY, SO A RENAME
+    # ON EITHER SIDE ALONE HAS TO FAIL.
+    for catalogue in ("desi-dr10", "gaia-dr3", "sdss-dr12", "simbad", "ned"):
+        assert f'data-sky-view-catalogue="{catalogue}"' in content
+
+
+@pytest.mark.django_db
+def test_reference_catalogues_are_all_off_by_default(client, transient):
+    """OFF BY DEFAULT IS A SERVER-SIDE GUARANTEE, NOT SOMETHING JAVASCRIPT UNDOES:
+    EACH TICKED BOX COSTS A CONE SEARCH ON EVERY PAGE LOAD."""
+    content = client.get(f"/transient/{transient.uuid}/").content.decode()
+    for element in re.findall(r"<input[^>]*data-sky-view-catalogue[^>]*>", content):
+        assert "checked" not in element
 
 
 @pytest.mark.django_db

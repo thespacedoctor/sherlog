@@ -13,7 +13,65 @@ PARAMETERS:
     ra     -- right ascension in decimal degrees (required)
     decl   -- declination in decimal degrees (required)
     label  -- name used in the accessible label (optional)
+
+THIS TEMPLATE IS THE SOURCE OF TRUTH FOR WHICH REFERENCE CATALOGUES CAN BE
+OVERLAID AND WHAT COLOUR EACH ONE IS DRAWN IN — sky_view.js ONLY KNOWS HOW TO
+FETCH THE ids LISTED BELOW.
 {% endcomment %}
+{# WHICH REFERENCE CATALOGUES TO OVERLAY. ALL OFF BY DEFAULT: EACH IS FETCHED    #}
+{# ONLY WHEN ITS BOX IS FIRST TICKED, AND THREE OF THE FIVE ARE CONE SEARCHES    #}
+{# COSTING A ROUND TRIP EACH. HIDDEN UNTIL sky_view.js WIRES IT, SO THE LIST     #}
+{# NEVER APPEARS WITHOUT WORKING TOGGLES.                                        #}
+{#                                                                               #}
+{# data-colour IS THE COLOUR ALADIN PAINTS THE SOURCES IN, AND accent-color      #}
+{# REPEATS IT ON THE BOX SO THE TWO KEY EACH OTHER. IT IS SET INLINE BECAUSE THE #}
+{# COLOUR IS DATA — ONE VALUE PER CATALOGUE — WHICH TAILWIND CANNOT GENERATE A   #}
+{# CLASS FOR, THE SAME REASON crossmatch_table.html SETS ITS RANK COLOURS INLINE.#}
+<ul data-sky-view-catalogues hidden
+    aria-label="Reference catalogues to overlay"
+    class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+    <li>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" data-sky-view-catalogue="desi-dr10"
+                   data-colour="#f5d90a" style="accent-color: #f5d90a">
+            DESI Legacy Survey DR10
+            <span data-sky-view-catalogue-state hidden class="italic"></span>
+        </label>
+    </li>
+    <li>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" data-sky-view-catalogue="gaia-dr3"
+                   data-colour="#00e5ff" style="accent-color: #00e5ff">
+            Gaia DR3
+            <span data-sky-view-catalogue-state hidden class="italic"></span>
+        </label>
+    </li>
+    <li>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" data-sky-view-catalogue="sdss-dr12"
+                   data-colour="#ff7ab6" style="accent-color: #ff7ab6">
+            SDSS DR12
+            <span data-sky-view-catalogue-state hidden class="italic"></span>
+        </label>
+    </li>
+    <li>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" data-sky-view-catalogue="simbad"
+                   data-colour="#7cf03d" style="accent-color: #7cf03d">
+            SIMBAD
+            <span data-sky-view-catalogue-state hidden class="italic"></span>
+        </label>
+    </li>
+    <li>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" data-sky-view-catalogue="ned"
+                   data-colour="#ff8a3d" style="accent-color: #ff8a3d">
+            NED
+            <span data-sky-view-catalogue-state hidden class="italic"></span>
+        </label>
+    </li>
+</ul>
+
 {# HEIGHT TRACKS THE VIEWPORT BETWEEN A 320px FLOOR AND AN 800px (50rem) CEILING. #}
 <div data-sky-view
      data-ra="{{ ra|stringformat:'f' }}"
