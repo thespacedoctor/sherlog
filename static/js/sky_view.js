@@ -65,6 +65,10 @@ const DESI_DR10_SCS_URL = "https://datalab.noirlab.edu/scs/ls_dr10/tractor";
 // CONE RADIUS FOR THE CATALOGUES FETCHED ONCE RATHER THAN PROGRESSIVELY, IN
 // DEGREES. WIDER THAN FIELD_OF_VIEW_DEG SO A SMALL PAN STILL HAS SOURCES IN IT.
 const CATALOGUE_CONE_RADIUS_DEG = 0.05;
+// VizieR'S CONE SEARCH RETURNS EVERY COLUMN OF EVERY ROW AND ALADIN ASKS FOR UP
+// TO 100,000 OF THEM BY DEFAULT. THESE TABLES RETURN A HANDFUL AT
+// CATALOGUE_CONE_RADIUS_DEG, SO THIS ONLY EXISTS TO BOUND A PATHOLOGICAL FIELD.
+const VIZIER_SOURCE_LIMIT = 5000;
 // DESI GETS A TIGHTER CONE THAN THE REST BECAUSE ITS CONE SEARCH RETURNS EVERY
 // TRACTOR COLUMN — ABOUT 150 OF THEM — SO EACH SOURCE COSTS ~3.4 kB. AT 0.05 deg
 // THAT IS A 4.6 MB RESPONSE; AT 0.025 deg IT IS 0.5 MB, WHICH STILL COMFORTABLY
@@ -471,6 +475,25 @@ function wireSelection(aladin, sky) {
  * THE OTHER THREE ARE ONE-SHOT CONE SEARCHES THAT REPORT BACK THROUGH THEIR
  * SUCCESS/ERROR CALLBACKS.
  */
+/**
+ * A VizieR TABLE FETCHED AS A ONE-SHOT CONE SEARCH AROUND THE TRANSIENT. VizieR
+ * SENDS CORS HEADERS, SO UNLIKE THE DESI TRACTOR SEARCH THIS NEEDS NO PROXY.
+ */
+function vizierCone(tableId) {
+    return {
+        progressive: false,
+        build: (ra, decl, options, onLoad, onFail) =>
+            A.catalogFromVizieR(
+                tableId,
+                `${ra} ${decl}`,
+                CATALOGUE_CONE_RADIUS_DEG,
+                { ...options, limit: VIZIER_SOURCE_LIMIT },
+                onLoad,
+                onFail
+            ),
+    };
+}
+
 const CATALOGUE_BUILDERS = {
     "desi-dr10": {
         progressive: false,
@@ -502,16 +525,41 @@ const CATALOGUE_BUILDERS = {
         build: (ra, decl, options, onLoad, onFail) =>
             A.catalogFromNED(`${ra} ${decl}`, CATALOGUE_CONE_RADIUS_DEG, options, onLoad, onFail),
     },
+    "panstarrs-dr1": {
+        // DR1 IS THE ONLY PAN-STARRS RELEASE WITH A CATALOGUE HiPS.
+        progressive: true,
+        build: (ra, decl, options) => A.catalogHiPS(`${HIPS_CAT_BASE}/II/349/ps1`, options),
+    },
+    // VizieR'S NEWEST MILLIQUAS. LATER VERSIONS EXIST UPSTREAM BUT NOT AT CDS.
+    milliquas: vizierCone("VII/294/catalog"),
+    // TABLE 1 IS THE GALAXY PARENT SAMPLE — THE TABLE BEHIND SHERLOCK'S "LASr
+    // galaxy" SEARCH. TABLES 2 AND 3 ARE THE R90 AGN AND CANDIDATE LISTS.
+    lasr: vizierCone("J/MNRAS/494/1784/table1"),
+    twomass: {
+        progressive: true,
+        build: (ra, decl, options) => A.catalogHiPS(`${HIPS_CAT_BASE}/II/246/out`, options),
+    },
+    // THE DESI *SPECTROSCOPIC* REDSHIFTS, NOT THE LEGACY SURVEY IMAGING ABOVE.
+    // THERE IS NO PUBLIC DR2 REDSHIFT CATALOGUE AT EITHER CDS OR NOIRLab.
+    "desi-dr1": vizierCone("V/161/zcatdr1"),
 };
 
 // A SHAPE PER CATALOGUE AS WELL AS A COLOUR: THE RANK CIRCLES ALREADY SPAN MOST
 // OF THE HUES, SO SHAPE IS WHAT KEEPS TWO OVERLAYS APART WHEN THEY SIT CLOSE.
+// ALADIN OFFERS SIX SHAPES AND THERE ARE TEN CATALOGUES, SO THREE REPEAT — EACH
+// TIME PAIRED WITH A COLOUR FAR FROM THE OTHER'S. COLOUR CARRIES THE IDENTITY,
+// SHAPE IS THE TIE-BREAKER. THE COLOURS THEMSELVES LIVE IN sky_view.html.
 const CATALOGUE_SHAPES = {
     "desi-dr10": "square",
     "gaia-dr3": "circle",
     "sdss-dr12": "triangle",
     simbad: "rhomb",
     ned: "plus",
+    "panstarrs-dr1": "square",
+    milliquas: "circle",
+    lasr: "cross",
+    twomass: "rhomb",
+    "desi-dr1": "triangle",
 };
 
 /**

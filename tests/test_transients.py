@@ -193,7 +193,18 @@ def test_detail_page_offers_every_reference_catalogue(client, transient):
     assert "data-sky-view-catalogues" in content
     # THE ids HERE ARE THE KEYS sky_view.js LOOKS ITS BUILDERS UP BY, SO A RENAME
     # ON EITHER SIDE ALONE HAS TO FAIL.
-    for catalogue in ("desi-dr10", "gaia-dr3", "sdss-dr12", "simbad", "ned"):
+    for catalogue in (
+        "desi-dr10",
+        "gaia-dr3",
+        "sdss-dr12",
+        "simbad",
+        "ned",
+        "panstarrs-dr1",
+        "milliquas",
+        "lasr",
+        "twomass",
+        "desi-dr1",
+    ):
         assert f'data-sky-view-catalogue="{catalogue}"' in content
 
 
