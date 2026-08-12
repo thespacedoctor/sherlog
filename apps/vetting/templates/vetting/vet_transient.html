@@ -33,20 +33,15 @@
          }">
 
         {# RADIOS, NOT CHECKBOXES: A VERDICT IS ONE OR THE OTHER, AND RADIOS SAY #}
-        {# SO TO THE KEYBOARD AND TO A SCREEN READER. STYLED AS THE TWO COLOURED #}
-        {# CONTROLS THEY REPLACE, WITH THE INPUT ITSELF VISUALLY HIDDEN.         #}
+        {# SO TO THE KEYBOARD AND TO A SCREEN READER. STYLED AS THE THREE       #}
+        {# COLOURED CONTROLS THEY REPLACE, WITH THE INPUT ITSELF VISUALLY       #}
+        {# HIDDEN.                                                             #}
         <fieldset>
             <legend class="sr-only">Did Sherlock get this right?</legend>
+            <p class="mb-3 text-sm text-muted">
+                Select correct if Sherlock has identified the correct host, ambiguous if you are unsure if Sherlock is correct or not, and incorrect if Sherlock is definitely wrong.
+            </p>
             <div class="flex flex-wrap gap-3">
-                <label class="cursor-pointer">
-                    <input type="radio" name="verdict" value="incorrect" class="peer sr-only"
-                           x-model="verdict"
-                           {% if form.verdict.value == "incorrect" %}checked{% endif %}>
-                    <span class="inline-flex items-center justify-center gap-2 rounded border border-danger/40 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger/10 peer-checked:bg-danger/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-danger peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
-                        {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
-                        Incorrect
-                    </span>
-                </label>
                 <label class="cursor-pointer">
                     <input type="radio" name="verdict" value="correct" class="peer sr-only"
                            x-model="verdict"
@@ -56,13 +51,22 @@
                         Correct
                     </span>
                 </label>
-                <label class="cursor-pointer" title="Unclear which source is associated with the transient.">
+                <label class="cursor-pointer">
                     <input type="radio" name="verdict" value="ambiguous" class="peer sr-only"
                            x-model="verdict"
                            {% if form.verdict.value == "ambiguous" %}checked{% endif %}>
                     <span class="inline-flex items-center justify-center gap-2 rounded border border-warning/40 px-4 py-2 text-sm font-medium text-warning transition-colors hover:bg-warning/10 peer-checked:bg-warning/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-warning peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
                         {% include "django_fundamentals/atoms/icon.html" with name="alert" class="h-4 w-4" %}
                         Ambiguous
+                    </span>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="verdict" value="incorrect" class="peer sr-only"
+                           x-model="verdict"
+                           {% if form.verdict.value == "incorrect" %}checked{% endif %}>
+                    <span class="inline-flex items-center justify-center gap-2 rounded border border-danger/40 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger/10 peer-checked:bg-danger/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-danger peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
+                        {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
+                        Incorrect
                     </span>
                 </label>
             </div>

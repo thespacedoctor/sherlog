@@ -33,6 +33,17 @@
     margin-bottom: 0;
 }
 
+/* THE ZOOM +/- BUTTONS SHARE A WIDGET WITH THE FoV READOUT (ONE ELEMENT, BOTH
+   showFov AND showZoomControl DRAW INTO IT), ANCHORED BOTTOM-LEFT BY ALADIN'S
+   OWN .aladin-fov RULE. MOVED TO TOP-LEFT, MIRRORING THE FULLSCREEN/STACK
+   BUTTONS' TOP-RIGHT PLACEMENT ABOVE, SO CONTROLS FRAME THE TOP OF THE CANVAS
+   AND THE MODE-TOGGLE PILL HAS THE BOTTOM ROW TO ITSELF. */
+.aladin-container .aladin-fov {
+    top: 0.2rem;
+    bottom: auto;
+    left: 0.2rem;
+}
+
 @layer components {
     /* =====================================================================
        CROSSMATCH RANK COLOURS

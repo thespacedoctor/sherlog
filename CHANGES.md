@@ -1,5 +1,7 @@
 # Changes
 
+* **ENHANCEMENT**: the triage form's three verdict buttons are now ordered Correct, Ambiguous, Incorrect, with a line of instructions above them spelling out when to pick each one instead of a tooltip on the Ambiguous button alone. The sky view's zoom control (it shares a widget with Aladin's FoV readout) moved from the bottom-left to the top-left corner, mirroring the fullscreen/layers buttons at top-right.
+
 * **FEATURE**: the triage form gained a third, amber "Ambiguous" verdict alongside Correct/Incorrect, for transients where it's unclear which source is even associated with them — a tooltip on the button explains why. `sherlock_correct` moved from a boolean to a `correct`/`incorrect`/`ambiguous` choice field (still `NULL` for unvetted), so the run page's tabs, counts and the shared transient table's "Vetted as" column all carry a fourth outcome now, not just three.
 
 * **REFACTOR**: vetting runs are keyed on the Sherlock version that produced the data, not on a version typed in by hand. `create_vetting_run` with no argument opens a run for every version in `sherlock_classifications`, covering only the transients that version classified. The made-up `v0.0.0` run has been retired in favour of the real `v3.1.0`.

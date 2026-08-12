@@ -179,7 +179,10 @@ def test_vetting_page_shows_the_transient_and_form(client, run, vetter):
     assert 'name="verdict" value="correct"' in content
     assert 'name="verdict" value="incorrect"' in content
     assert 'name="verdict" value="ambiguous"' in content
-    assert "Unclear which source is associated with the transient." in content
+    assert (
+        "Select correct if Sherlock has identified the correct host, ambiguous if you are "
+        "unsure if Sherlock is correct or not, and incorrect if Sherlock is definitely wrong."
+    ) in content
 
 
 def test_posting_a_verdict_saves_and_moves_on(client, run, vetter):
@@ -446,8 +449,8 @@ def test_the_form_offers_the_classification_codes(client, run, vetter):
 
     assert "SN — supernova" in content
     assert WRONG_RANK in content
-    # THE BUTTONS MOVED, AND INCORRECT NOW LEADS.
-    assert content.index('value="incorrect"') < content.index('value="correct"')
+    # ORDERED CORRECT, AMBIGUOUS, INCORRECT.
+    assert content.index('value="correct"') < content.index('value="ambiguous"') < content.index('value="incorrect"')
 
 
 def test_the_form_starts_with_only_the_verdict(client, run, vetter):
@@ -457,10 +460,11 @@ def test_the_form_starts_with_only_the_verdict(client, run, vetter):
 
     content = client.get(f"/vetting/{VERSION}/transient/{vetting.transient_id}/").content.decode()
 
-    # THE VERDICT IS RADIOS, NOT TWO SUBMITS, AND INCORRECT STILL LEADS.
-    assert 'type="radio" name="verdict" value="incorrect"' in content
+    # THE VERDICT IS RADIOS, NOT SUBMIT BUTTONS, ORDERED CORRECT, AMBIGUOUS, INCORRECT.
     assert 'type="radio" name="verdict" value="correct"' in content
-    assert content.index('value="incorrect"') < content.index('value="correct"')
+    assert 'type="radio" name="verdict" value="ambiguous"' in content
+    assert 'type="radio" name="verdict" value="incorrect"' in content
+    assert content.index('value="correct"') < content.index('value="ambiguous"') < content.index('value="incorrect"')
 
     # NOTHING TO SUBMIT UNTIL ONE IS PICKED.
     assert ':disabled="!verdict"' in content
