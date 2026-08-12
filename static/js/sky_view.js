@@ -533,8 +533,10 @@ const CATALOGUE_BUILDERS = {
     // VizieR'S NEWEST MILLIQUAS. LATER VERSIONS EXIST UPSTREAM BUT NOT AT CDS.
     milliquas: vizierCone("VII/294/catalog"),
     // TABLE 1 IS THE GALAXY PARENT SAMPLE — THE TABLE BEHIND SHERLOCK'S "LASr
-    // galaxy" SEARCH. TABLES 2 AND 3 ARE THE R90 AGN AND CANDIDATE LISTS.
+    // galaxy" SEARCH — AND TABLE 2 THE KNOWN R90-SELECTED AGN BEHIND ITS "LASr
+    // agn" SEARCH. TABLE 3, THE R90 AGN *CANDIDATES*, IS DELIBERATELY NOT HERE.
     lasr: vizierCone("J/MNRAS/494/1784/table1"),
+    "lasr-agn": vizierCone("J/MNRAS/494/1784/table2"),
     twomass: {
         progressive: true,
         build: (ra, decl, options) => A.catalogHiPS(`${HIPS_CAT_BASE}/II/246/out`, options),
@@ -558,6 +560,9 @@ const CATALOGUE_SHAPES = {
     "panstarrs-dr1": "square",
     milliquas: "circle",
     lasr: "cross",
+    // THE TWO LASr ENTRIES ARE THE ONE PAIR A READER WILL COMPARE DIRECTLY, SO
+    // THEY DIFFER IN BOTH SHAPE AND COLOUR RATHER THAN SHARING A FAMILY LOOK.
+    "lasr-agn": "plus",
     twomass: "rhomb",
     "desi-dr1": "triangle",
 };
