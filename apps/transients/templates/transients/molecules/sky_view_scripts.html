@@ -2,14 +2,15 @@
 THE SCRIPTS A PAGE NEEDS BEFORE transients/molecules/sky_view.html WILL RENDER.
 
 ALADIN IS A 1.8 MB BUNDLE, SO IT IS PULLED IN PER PAGE RATHER THAN FROM THE BASE
-LAYOUT — ONLY PAGES SHOWING A SKY VIEW PAY FOR IT. CDS PUBLISHES NO WORKING
-PINNED-VERSION PATH (/api/v3/<version>/aladin.js IS A 404), SO "latest" IS THE
-ONLY OPTION.
+LAYOUT — ONLY PAGES SHOWING A SKY VIEW PAY FOR IT. IT IS VENDORED LOCALLY UNDER
+static/vendor/aladin/ RATHER THAN LOADED FROM aladin.cds.unistra.fr BECAUSE THAT
+CDN SENDS Cache-Control: no-store, FORCING A FULL RE-DOWNLOAD ON EVERY PAGE VIEW.
+RUN scripts/vendor_aladin.sh TO REFRESH THE VENDORED COPY.
 
 USAGE:
     {% block extra_body %}
         {% include "transients/molecules/sky_view_scripts.html" %}
     {% endblock %}
 {% endcomment %}
-<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+<script src="{% static 'vendor/aladin/aladin-3.8.2.js' %}" charset="utf-8"></script>
 <script src="{% static 'js/sky_view.js' %}" defer></script>

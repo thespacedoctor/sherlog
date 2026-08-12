@@ -40,6 +40,6 @@ class TransientListAPIView(generics.ListAPIView):
     serializer_class = TransientSerializer
     pagination_class = TransientPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["name", "origin", "sherlock_classification"]
-    ordering_fields = ["name", "origin", "sherlock_classification", "ra", "decl", "created_at"]
+    search_fields = ["name", "origin_name", "sherlock_classification"]
+    ordering_fields = ["name", "origin_name", "sherlock_classification", "ra", "decl", "created_at"]
     ordering = ["name"]

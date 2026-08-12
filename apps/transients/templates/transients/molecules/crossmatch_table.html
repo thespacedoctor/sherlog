@@ -6,8 +6,12 @@ EACH RANKED SOURCE IS ONE ROW. WHERE SHERLOCK MERGED THE SAME SOURCE ACROSS
 SEVERAL CATALOGUES IT MARKS THE ROW "multiple"; THOSE ROWS EXPAND TO SHOW THE
 INDIVIDUAL CATALOGUE MATCHES BEHIND THEM.
 
+THE 23 COLUMNS ARE BANNERED INTO FOUR GROUPS — WHAT SHERLOCK CONCLUDED, WHO THE
+SOURCE IS, HOW FAR AWAY IT SITS, AND HOW DISTANT IT IS.
+
 EVERY GROUP GETS ITS OWN <tbody> BECAUSE ALPINE'S SCOPE HAS TO CONTAIN THE ROWS
-IT TOGGLES, AND SIBLING <tr>s ARE NOT INSIDE ONE ANOTHER.
+IT TOGGLES, AND SIBLING <tr>s ARE NOT INSIDE ONE ANOTHER. THE <tbody> ALSO
+CARRIES THE RANK COLOUR, WHICH THE ROWS INHERIT — SEE .rank-row IN input.css.
 
 USAGE:
     {% include "transients/molecules/crossmatch_table.html" with transient=transient %}
@@ -19,6 +23,10 @@ USAGE:
         <h2 class="text-sm font-semibold uppercase tracking-wider text-muted">Sherlock says</h2>
         <span class="rounded bg-brand/10 px-2 py-0.5 text-sm font-medium text-brand">{{ sherlock.classification }}</span>
         {% if sherlock.summary %}<span class="text-sm text-muted">{{ sherlock.summary }}</span>{% endif %}
+        {# THE CLASSIFICATIONS TABLE IS KEYED ON THE TRANSIENT ALONE, SO THIS ROW #}
+        {# IS ALWAYS THE LATEST RUN'S — SHOWN SO THAT IS VISIBLE RATHER THAN      #}
+        {# SILENTLY ASSUMED TO MATCH THE RUN BEING VETTED.                        #}
+        {% if sherlock.sherlock_version %}<span class="ml-auto font-mono text-xs text-muted">{{ sherlock.sherlock_version }}</span>{% endif %}
     </div>
     {% if sherlock.annotation %}
         {# SHERLOCK WRITES THE ANNOTATION AS A SENTENCE OF HTML, LINKING THE #}
@@ -32,35 +40,53 @@ USAGE:
 <div class="overflow-x-auto rounded-lg border border-line">
     <table class="w-full text-left text-sm">
         <caption class="sr-only">Sources Sherlock matched against this transient, best ranked first.</caption>
-        <thead class="bg-sunken text-xs uppercase tracking-wider text-muted">
+        <thead class="bg-sunken/40 text-xs uppercase tracking-wider text-muted/70">
+            {# GROUP BANNER. EACH GROUP'S FIRST COLUMN CARRIES THE VERTICAL RULE #}
+            {# THAT SEPARATES IT FROM THE ONE BEFORE, IN BOTH HEADER ROWS.       #}
+            <tr class="border-b border-line">
+                <th scope="colgroup" colspan="7" class="px-4 pt-2.5 pb-1 text-center font-semibold text-ink/70">Sherlock</th>
+                <th scope="colgroup" colspan="8" class="border-l border-muted/40 px-4 pt-2.5 pb-1 text-center font-semibold text-ink/70">Catalogue</th>
+                <th scope="colgroup" colspan="4" class="border-l border-muted/40 px-4 pt-2.5 pb-1 text-center font-semibold text-ink/70">Separation</th>
+                <th scope="colgroup" colspan="4" class="border-l border-muted/40 px-4 pt-2.5 pb-1 text-center font-semibold text-ink/70">Distance</th>
+            </tr>
             <tr>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Rank</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Object ID</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Catalogue</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Type</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Subtype</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Sep &Prime;</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">N &Prime;</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">E &Prime;</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Sep kpc</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Semi-major &Prime;</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Mag</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">z</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">photo z</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Distance</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Direct dist.</th>
-                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Abs mag</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Assoc.</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Reliability</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Score</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Search radius &Prime;</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">View name</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Abs mag</th>
+
+                <th scope="col" class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5 font-medium">Cat name</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Object ID</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Type</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Subtype</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">RA</th>
                 <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Dec</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Mag</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Semi-major &Prime;</th>
+
+                <th scope="col" class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5 font-medium">Sep &Prime;</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">N &Prime;</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">E &Prime;</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Sep kpc</th>
+
+                <th scope="col" class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5 font-medium">z</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">photo z</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Distance</th>
+                <th scope="col" class="whitespace-nowrap px-4 py-2.5 font-medium">Direct dist.</th>
             </tr>
         </thead>
 
         {% for lead, matches in transient.crossmatch_tree %}
-        <tbody class="divide-y divide-line border-t border-line" x-data="{ open: false }">
-            <tr class="hover:bg-raised">
+        {# data-rank-group IS WHAT sky_view.js CLICKS BETWEEN THIS ROW AND ITS #}
+        {# CIRCLE ON THE SKY.                                                  #}
+        <tbody class="cursor-pointer divide-y divide-line border-t border-line"
+               data-rank-group="{{ lead.rank }}"
+               x-data="{ open: false }"
+               style="--rank-colour: var(--color-rank-{{ lead.rank_colour_token }})">
+            <tr class="rank-row rank-row-lead hover:bg-raised">
                 <td class="whitespace-nowrap px-4 py-2.5">
                     {% if matches %}
                         <button type="button"
@@ -79,68 +105,80 @@ USAGE:
                         <span class="font-mono text-xs">{{ lead.rank }}</span>
                     {% endif %}
                 </td>
+                <td class="whitespace-nowrap px-4 py-2.5">{{ lead.association_type|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ lead.reliability_label|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-muted">{{ lead.rank_score|floatformat:2|default:"—" }}</td>
+                {# ZERO MEANS "multiple", NOT A ZERO-RADIUS SEARCH, SO IT READS AS #}
+                {# "no single value" RATHER THAN 0.00.                             #}
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{% if lead.original_search_radius_arcsec %}{{ lead.original_search_radius_arcsec|floatformat:2 }}{% else %}&mdash;{% endif %}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.catalogue_view_name|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.transient_abs_mag|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5">{{ lead.catalogue_table_name|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.catalogue_object_id|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5">{{ lead.catalogue_table_name|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5">{{ lead.catalogue_object_type|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5">{{ lead.catalogue_object_subtype|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.north_separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.east_separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.physical_separation_kpc|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.sm_axis_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.ra_deg|floatformat:5|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.dec_deg|floatformat:5|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">
                     {% with best=lead.best_magnitude %}{% if best %}{{ best.0 }}={{ best.1|floatformat:2 }}{% else %}&mdash;{% endif %}{% endwith %}
                 </td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.z|floatformat:4|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.sm_axis_arcsec|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5 font-mono text-xs">{{ lead.separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.north_separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.east_separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.physical_separation_kpc|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2.5 font-mono text-xs">{{ lead.z|floatformat:4|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.photo_z|floatformat:4|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">
                     {% if lead.best_distance %}{{ lead.best_distance|floatformat:1 }}{% if lead.best_distance_label %} <span class="text-muted">{{ lead.best_distance_label }}</span>{% endif %}{% else %}&mdash;{% endif %}
                 </td>
                 <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.direct_distance|floatformat:1|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.transient_abs_mag|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5">{{ lead.association_type|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ lead.reliability_label|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-muted">{{ lead.rank_score|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.ra_deg|floatformat:5|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ lead.dec_deg|floatformat:5|default:"—" }}</td>
             </tr>
 
             {% for match in matches %}
-            <tr x-show="open" x-cloak class="bg-sunken/40 text-muted hover:bg-raised">
+            <tr x-show="open" x-cloak class="rank-row rank-row-child text-muted hover:bg-raised">
                 {# THE RANK CELL IS THE INDENT: A CHILD HAS NO RANK OF ITS OWN, #}
                 {# ONLY ITS PARENT'S REPEATED IN merged_rank.                   #}
                 <td class="whitespace-nowrap px-4 py-2 pl-8" aria-hidden="true">&#8735;</td>
+                <td class="whitespace-nowrap px-4 py-2">{{ match.association_type|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2">{{ match.reliability_label|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.rank_score|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{% if match.original_search_radius_arcsec %}{{ match.original_search_radius_arcsec|floatformat:2 }}{% else %}&mdash;{% endif %}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.catalogue_view_name|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.transient_abs_mag|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2">{{ match.catalogue_table_name|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.catalogue_object_id|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2">{{ match.catalogue_table_name|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2">{{ match.catalogue_object_type|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2">{{ match.catalogue_object_subtype|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.north_separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.east_separation_arcsec|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.physical_separation_kpc|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.sm_axis_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.ra_deg|floatformat:5|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.dec_deg|floatformat:5|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">
                     {% with best=match.best_magnitude %}{% if best %}{{ best.0 }}={{ best.1|floatformat:2 }}{% else %}&mdash;{% endif %}{% endwith %}
                 </td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.z|floatformat:4|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.sm_axis_arcsec|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2 font-mono text-xs">{{ match.separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.north_separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.east_separation_arcsec|floatformat:2|default:"—" }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.physical_separation_kpc|floatformat:2|default:"—" }}</td>
+
+                <td class="whitespace-nowrap border-l border-muted/40 px-4 py-2 font-mono text-xs">{{ match.z|floatformat:4|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.photo_z|floatformat:4|default:"—" }}</td>
                 <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">
                     {% if match.best_distance %}{{ match.best_distance|floatformat:1 }}{% if match.best_distance_label %} <span class="text-muted">{{ match.best_distance_label }}</span>{% endif %}{% else %}&mdash;{% endif %}
                 </td>
                 <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.direct_distance|floatformat:1|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.transient_abs_mag|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2">{{ match.association_type|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2">{{ match.reliability_label|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.rank_score|floatformat:2|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.ra_deg|floatformat:5|default:"—" }}</td>
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ match.dec_deg|floatformat:5|default:"—" }}</td>
             </tr>
             {% endfor %}
         </tbody>
         {% empty %}
         <tbody>
             <tr>
-                <td colspan="21" class="px-4 py-8 text-center text-muted">
+                <td colspan="23" class="px-4 py-8 text-center text-muted">
                     Sherlock matched no sources against this transient.
                 </td>
             </tr>

@@ -61,6 +61,22 @@
     --color-warning: 217 119 6; /* #d97706                                */
     --color-danger: 220 38 38; /* #dc2626                                */
 
+    /* --- SHERLOCK RANK COLOURS ------------------------------------------ */
+    /* ONE HUE PER RANKED CROSSMATCH, TYING EACH TABLE ROW TO ITS CIRCLE ON THE
+       SKY VIEW. RANKS PAST THE EIGHTH SHARE --color-rank-other.
+       THE SAME EIGHT HUES, IN THE SAME ORDER, ARE HARD-CODED AS RANK_COLOURS IN
+       static/js/sky_view.js — ALADIN PAINTS ONTO A CANVAS AND CANNOT FOLLOW THE
+       THEME TOGGLE, SO IT KEEPS ITS OWN COPY. CHANGE BOTH TOGETHER. */
+    --color-rank-1: 42 120 214; /* #2a78d6  blue                          */
+    --color-rank-2: 235 104 52; /* #eb6834  orange                        */
+    --color-rank-3: 27 175 122; /* #1baf7a  aqua                          */
+    --color-rank-4: 237 161 0; /* #eda100  yellow                        */
+    --color-rank-5: 232 123 164; /* #e87ba4  magenta                       */
+    --color-rank-6: 0 131 0; /* #008300  green                         */
+    --color-rank-7: 74 58 167; /* #4a3aa7  violet                        */
+    --color-rank-8: 227 73 72; /* #e34948  red                           */
+    --color-rank-other: 100 116 139; /* #64748b  rank 9 and beyond             */
+
     /* --- DIMENSIONS ----------------------------------------------------- */
     --sidebar-w: 16rem; /* 256px — desktop sidebar width          */
     --navbar-h: 3.5rem; /* 56px  — top navbar height              */
@@ -105,4 +121,17 @@
     --color-success: 74 222 128; /* #4ade80                                 */
     --color-warning: 251 191 36; /* #fbbf24                                 */
     --color-danger: 248 113 113; /* #f87171                                 */
+
+    /* RANK HUES RE-STEPPED FOR THE DARK SURFACE — THE SAME EIGHT HUES, NOT A
+       SECOND PALETTE. THESE ARE THE VALUES sky_view.js DRAWS WITH, BECAUSE ITS
+       CIRCLES ALWAYS SIT ON A DARK SKY IMAGE WHATEVER THE PAGE THEME. */
+    --color-rank-1: 57 135 229; /* #3987e5  blue                           */
+    --color-rank-2: 217 89 38; /* #d95926  orange                         */
+    --color-rank-3: 25 158 112; /* #199e70  aqua                           */
+    --color-rank-4: 201 133 0; /* #c98500  yellow                         */
+    --color-rank-5: 213 81 129; /* #d55181  magenta                        */
+    --color-rank-6: 0 131 0; /* #008300  green                          */
+    --color-rank-7: 144 133 233; /* #9085e9  violet                         */
+    --color-rank-8: 230 103 103; /* #e66767  red                            */
+    --color-rank-other: 148 163 184; /* #94a3b8  rank 9 and beyond              */
 }

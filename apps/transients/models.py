@@ -18,13 +18,23 @@ class Transient(TimeStampedModel):
     ```python
     transient = Transient.objects.create(
         name="313853517460144141",
-        origin="lasair",
+        origin_name="lasair filter",
+        origin_url="https://lasair.lsst.ac.uk/filters/1254/",
         ra=148.61201,
         decl=1.609392,
         url="https://lasair.lsst.ac.uk/objects/313853517460144141",
     )
     ```
     """
+
+    # FILLED IN BY crossmatch_tree() THE FIRST TIME IT RUNS, SO THE TABLE AND THE
+    # SKY VIEW SHARE ONE QUERY RATHER THAN REPEATING IT. KEYED BY VERSION, SO A
+    # PAGE CANNOT BE SERVED ONE VERSION'S TREE FROM A CACHE ANOTHER FILLED.
+    _crossmatch_tree = None
+    _crossmatch_tree_version = None
+    # SET BY THE VETTING VIEW TO PIN THE PAGE TO ITS RUN'S SHERLOCK VERSION. LEFT
+    # UNSET ELSEWHERE, WHERE THE NEWEST VERSION PRESENT IS THE RIGHT ANSWER.
+    crossmatch_version = None
 
     uuid = models.UUIDField(primary_key=True, default=uuidlib.uuid4, editable=False)
     # RA IS IN DECIMAL DEGREES 0-360, DEC IN DECIMAL DEGREES -90 TO +90. THE
@@ -41,9 +51,18 @@ class Transient(TimeStampedModel):
         help_text="Declination in decimal degrees.",
     )
     name = models.CharField(max_length=30, help_text="Broker-assigned object name or ID.")
-    origin = models.CharField(
+    # WHERE THE TRANSIENT CAME FROM, SPLIT IN TWO: THE URL IDENTIFIES THE BROKER
+    # FILTER EXACTLY AND IS WHAT ROWS ARE MADE UNIQUE ON, WHILE THE NAME IS THE
+    # ONLY PART WORTH SHOWING A HUMAN.
+    origin_name = models.CharField(
         max_length=75,
-        help_text="Where the transient came from — a broker name or the URL of the filter that selected it.",
+        blank=True,
+        help_text="Human-readable name for where the transient came from, e.g. 'lasair filter'.",
+    )
+    origin_url = models.URLField(
+        max_length=200,
+        blank=True,
+        help_text="The broker filter or feed that selected this transient.",
     )
     url = models.URLField(max_length=200, blank=True, help_text="Object page at the origin broker.")
     # NULL WHEN SHERLOCK HAS NOT CLASSIFIED THE TRANSIENT, SO "NOT RUN YET" IS
@@ -61,13 +80,13 @@ class Transient(TimeStampedModel):
         db_table = "transients"
         ordering = ["name"]
         constraints = [
-            # ONE ROW PER OBJECT PER BROKER. THIS IS WHAT MAKES THE IMPORTER
-            # IDEMPOTENT — RE-RUNNING IT UPDATES RATHER THAN DUPLICATES.
-            models.UniqueConstraint(fields=["name", "origin"], name="uniq_transient_name_origin"),
+            # ONE ROW PER OBJECT PER BROKER FILTER. THIS IS WHAT MAKES THE
+            # IMPORTER IDEMPOTENT — RE-RUNNING IT UPDATES RATHER THAN DUPLICATES.
+            models.UniqueConstraint(fields=["name", "origin_url"], name="uniq_transient_name_origin_url"),
         ]
         indexes = [
             models.Index(fields=["name"]),
-            models.Index(fields=["origin"]),
+            models.Index(fields=["origin_name"]),
         ]
 
     def __str__(self):
@@ -114,16 +133,90 @@ class Transient(TimeStampedModel):
         # SO IMPORTING IT BACK AT THE TOP WOULD BE A CIRCULAR IMPORT.
         from apps.sherlock.models import SherlockCrossmatch
 
+        version = self.crossmatch_version
+
+        # THE PAGE ASKS FOR THIS TWICE — ONCE FOR THE TABLE, ONCE FOR THE SKY
+        # VIEW'S CIRCLES — AND BOTH WANT THE SAME ROWS. THE KEY IS THE VERSION
+        # *ASKED FOR*, NOT THE ONE RESOLVED: CACHING THE RESOLVED VALUE WOULD
+        # MISS EVERY TIME, SINCE THE SECOND CALLER ASKS WITH None AGAIN.
+        if self._crossmatch_tree is not None and self._crossmatch_tree_version == version:
+            return self._crossmatch_tree
+        requestedVersion = version
+
+        # EVERY ROW FOR THIS TRANSIENT, WHATEVER ITS VERSION, IN ONE QUERY — THEN
+        # THE VERSION IS PICKED AND THE ROWS SORTED IN PYTHON. FETCHING THE LOT
+        # AND FILTERING HERE COSTS ONE QUERY WHERE ASKING THE DATABASE FOR THE
+        # LATEST VERSION FIRST WOULD COST TWO, AND A TRANSIENT HAS AT MOST A FEW
+        # DOZEN MATCHES.
+        matches = list(SherlockCrossmatch.objects.filter(transient=self))
+        if version is None and matches:
+            # THE VERSION ON THE HIGHEST id — THE LAST ROW WRITTEN. NOT A SORT OF
+            # THE VERSION STRINGS: v3.10.0 SORTS BELOW v3.1.0 ALPHABETICALLY.
+            version = max(matches, key=lambda match: match.id).sherlock_version
+
         leads = []
         children = {}
-        # ONE QUERY FOR EVERY ROW BELONGING TO THIS TRANSIENT — LEADS AND
-        # CHILDREN TOGETHER — THEN SORTED OUT IN PYTHON, SO THE PAGE COSTS ONE
-        # QUERY RATHER THAN ONE PER RANKED SOURCE.
-        for match in SherlockCrossmatch.objects.filter(transient=self):
+        for match in matches:
+            if match.sherlock_version != version:
+                continue
             if match.rank is not None:
                 leads.append(match)
             elif match.merged_rank is not None:
                 children.setdefault(match.merged_rank, []).append(match)
 
         leads.sort(key=lambda match: match.rank)
-        return [(lead, children.get(lead.rank, [])) for lead in leads]
+        self._crossmatch_tree = [(lead, children.get(lead.rank, [])) for lead in leads]
+        self._crossmatch_tree_version = requestedVersion
+        return self._crossmatch_tree
+
+    def crossmatch_overlays(self):
+        """*the circles the sky view draws, one per matched source*
+
+        Each record is a circle: where the source is, and the radius Sherlock
+        searched to find it — so the circle is the association boundary the
+        transient fell inside. ``lead`` records are the ranked sources; the
+        others are the individual catalogue matches merged into them, which the
+        sky view only shows when asked for all sources.
+
+        **Return:**
+
+        - ``overlays`` -- list of dicts, JSON-ready
+
+        **Usage:**
+
+        ```django
+        {{ transient.crossmatch_overlays|json_script:"sky-view-crossmatches" }}
+        ```
+        """
+        overlays = []
+        for lead, matches in self.crossmatch_tree():
+            # A MERGED LEAD HAS NO RADIUS OF ITS OWN — SHERLOCK OVERWROTE IT WITH
+            # "multiple", WHICH LANDS IN THE double COLUMN AS 0 — SO THE TIGHTEST
+            # OF THE SEARCHES THAT FOUND ITS PARTS STANDS IN FOR IT.
+            childRadii = [match.original_search_radius_arcsec for match in matches if match.original_search_radius_arcsec]
+            leadRadius = lead.original_search_radius_arcsec or (min(childRadii) if childRadii else None)
+
+            circles = [(lead, True, leadRadius)]
+            circles += [(match, False, match.original_search_radius_arcsec) for match in matches]
+
+            for match, isLead, radius in circles:
+                # EVERY COLUMN ON THE SHERLOCK MIRROR IS NULLABLE, AND A CIRCLE
+                # WITH NO CENTRE OR NO RADIUS IS NOT A CIRCLE.
+                if match.ra_deg is None or match.dec_deg is None or not radius:
+                    continue
+                overlays.append(
+                    {
+                        "rank": lead.rank,
+                        "isLead": isLead,
+                        "ra": match.ra_deg,
+                        "dec": match.dec_deg,
+                        "radiusArcsec": radius,
+                        # THE SOURCE'S OWN EXTENT, DRAWN DASHED. OFTEN ABSENT —
+                        # ONLY GALAXY CATALOGUES CARRY A SEMI-MAJOR AXIS.
+                        "smAxisArcsec": match.sm_axis_arcsec,
+                        "colourToken": lead.rank_colour_token,
+                        "label": match.catalogue_object_id or "",
+                        "catalogue": match.catalogue_table_name or "",
+                    }
+                )
+        return overlays

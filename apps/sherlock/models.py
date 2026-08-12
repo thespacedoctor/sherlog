@@ -37,6 +37,14 @@ DISTANCE_FLAG_LABELS = {
     "pz": "photo-z",
 }
 
+# HOW MANY RANKS GET A COLOUR OF THEIR OWN. RANKS BEYOND THIS SHARE ONE MUTED
+# TOKEN: EIGHT IS ALREADY MORE HUES THAN CAN BE TOLD RELIABLY APART, AND 91.5% OF
+# TRANSIENTS HAVE NO MORE THAN EIGHT RANKED SOURCES ANYWAY. THE MATCHING CANVAS
+# COLOURS LIVE IN static/js/sky_view.js (RANK_COLOURS) AND THE CSS TOKENS IN
+# static/src/tokens.css (--color-rank-*) — ALL THREE ARE THE SAME EIGHT HUES IN
+# THE SAME ORDER, SO CHANGE THEM TOGETHER.
+DISTINCT_RANK_COLOURS = 8
+
 
 class SherlockCrossmatch(models.Model):
     """*one candidate host source Sherlock matched against a transient*
@@ -77,12 +85,19 @@ class SherlockCrossmatch(models.Model):
         null=True,
     )
 
+    # WHICH SHERLOCK WROTE THE ROW. SHERLOCK DELETES A TRANSIENT'S PREVIOUS
+    # MATCHES BEFORE INSERTING NEW ONES, SO IN PRACTICE ONE TRANSIENT CARRIES ONE
+    # VERSION — BUT DIFFERENT TRANSIENTS CAN CARRY DIFFERENT ONES IF SHERLOCK WAS
+    # RUN OVER A SUBSET.
+    sherlock_version = models.CharField(max_length=45, null=True)
+
     rank = models.IntegerField(null=True)
     merged_rank = models.IntegerField(null=True)
     rank_score = models.FloatField(db_column="rankScore", null=True)
 
     catalogue_object_id = models.CharField(max_length=200, null=True)
     catalogue_table_name = models.CharField(max_length=100, null=True)
+    catalogue_view_name = models.CharField(max_length=100, null=True)
     catalogue_object_type = models.CharField(max_length=45, null=True)
     catalogue_object_subtype = models.CharField(max_length=45, null=True)
     association_type = models.CharField(max_length=45, null=True)
@@ -95,6 +110,10 @@ class SherlockCrossmatch(models.Model):
     east_separation_arcsec = models.FloatField(db_column="eastSeparationArcsec", null=True)
     physical_separation_kpc = models.FloatField(null=True)
     sm_axis_arcsec = models.FloatField(null=True)
+    # THE RADIUS SHERLOCK SEARCHED TO FIND THIS SOURCE. ZERO ON A MERGED LEAD —
+    # SHERLOCK WRITES THE STRING "multiple" INTO THIS double COLUMN — SO A LEAD'S
+    # REAL RADIUS HAS TO COME FROM ITS CHILDREN. SEE Transient.crossmatch_overlays.
+    original_search_radius_arcsec = models.FloatField(null=True)
 
     z = models.FloatField(null=True)
     photo_z = models.FloatField(db_column="photoZ", null=True)
@@ -152,6 +171,29 @@ class SherlockCrossmatch(models.Model):
         ```
         """
         return self.catalogue_object_subtype == "multiple"
+
+    @property
+    def rank_colour_token(self):
+        """*the `--color-rank-*` token suffix this row's rank is drawn in*
+
+        Ranks past the eighth share the muted token — see
+        ``DISTINCT_RANK_COLOURS``. A child row is drawn in its lead's colour,
+        which is why this reads ``merged_rank`` when there is no ``rank``.
+
+        **Return:**
+
+        - ``rank_colour_token`` -- "1".."8" or "other"
+
+        **Usage:**
+
+        ```django
+        style="--rank-colour: rgb(var(--color-rank-{{ match.rank_colour_token }}))"
+        ```
+        """
+        rank = self.rank if self.rank is not None else self.merged_rank
+        if rank is not None and 1 <= rank <= DISTINCT_RANK_COLOURS:
+            return str(rank)
+        return "other"
 
     @property
     def best_magnitude(self):
@@ -238,6 +280,9 @@ class SherlockClassification(models.Model):
         db_constraint=False,
     )
     classification = models.CharField(max_length=45, null=True)
+    # THE VERSION THAT REACHED THIS VERDICT. THE TABLE IS KEYED ON THE TRANSIENT
+    # ALONE, SO A RE-RUN OVERWRITES THE ROW — THIS IS ALWAYS THE LATEST RUN'S.
+    sherlock_version = models.CharField(max_length=45, null=True)
     # SHERLOCK WRITES THIS AS A SENTENCE OF HTML, LINKING THE MATCHED SOURCE TO
     # ITS CATALOGUE PAGE — SO THE TEMPLATE HAS TO RENDER IT UNESCAPED.
     annotation = models.TextField(null=True)

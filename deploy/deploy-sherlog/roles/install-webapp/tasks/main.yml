@@ -7,10 +7,24 @@
     home: "/home/{{ app_user }}"
     create_home: true
 
-- name: install python venv package
-  apt:
-    name: python3-venv
-    state: present
+# UBUNTU 21.04+ CREATES HOME DIRECTORIES 0750 (OWNER+GROUP ONLY, NO "other" ACCESS). THE
+# PUBLIC VHOST IS SERVED BY www-data, NOT {{ app_user }}, SO WITHOUT THIS IT CANNOT TRAVERSE
+# /home/{{ app_user }} TO REACH staticfiles/ — EVERY STATIC ASSET 403s REGARDLESS OF THE
+# Require all granted IN THE VHOST, BECAUSE THE FAILURE IS AT THE FILESYSTEM LEVEL, NOT APACHE'S.
+- name: allow apache to traverse the app user's home directory
+  user:
+    name: www-data
+    groups: "{{ app_user }}"
+    append: true
+  notify: restart apache2
+
+- name: build tailwind css locally before syncing
+  command: "conda run -n {{ local_conda_env }} npm run build:css"
+  args:
+    chdir: "{{ playbook_dir }}/../.."
+  delegate_to: localhost
+  become: false
+  run_once: true
 
 - name: sync application code
   synchronize:
@@ -18,20 +32,44 @@
     dest: "{{ app_dir }}"
     rsync_opts:
       - "--exclude=.venv"
+      - "--exclude=miniforge3"
       - "--exclude=node_modules"
       - "--exclude=deploy"
       - "--exclude=.git"
   become: true
   become_user: "{{ app_user }}"
 
-- name: create virtualenv and install the app
-  pip:
-    requirements: null
-    name: "."
+- name: download miniforge installer
+  get_url:
+    url: https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    dest: /tmp/miniforge-installer.sh
+    mode: "0755"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: install miniforge
+  command: "bash /tmp/miniforge-installer.sh -b -p {{ conda_dir }}"
+  args:
+    creates: "{{ conda_dir }}/bin/conda"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: remove miniforge installer
+  file:
+    path: /tmp/miniforge-installer.sh
+    state: absent
+
+- name: create conda environment for the app
+  command: "{{ conda_dir }}/bin/conda create -y -n {{ app_slug }} python={{ python_version }}"
+  args:
+    creates: "{{ conda_dir }}/envs/{{ app_slug }}/bin/python"
+  become: true
+  become_user: "{{ app_user }}"
+
+- name: install the app into the conda environment
+  command: "{{ conda_dir }}/envs/{{ app_slug }}/bin/pip install -e ."
+  args:
     chdir: "{{ app_dir }}"
-    virtualenv: "/home/{{ app_user }}/venv"
-    virtualenv_command: python3 -m venv
-    editable: true
   become: true
   become_user: "{{ app_user }}"
 
@@ -43,22 +81,38 @@
     mode: "0600"
 
 - name: run django migrations
-  command: "/home/{{ app_user }}/venv/bin/python manage.py migrate --noinput"
+  command: "{{ conda_dir }}/envs/{{ app_slug }}/bin/python manage.py migrate --noinput"
   args:
     chdir: "{{ app_dir }}"
   environment:
     DJANGO_ENV: production
+    DJANGO_SECRET_KEY: "{{ django_secret_key }}"
+    DJANGO_ALLOWED_HOSTS: "{{ ansible_host }}"
+    DB_NAME: "{{ app_slug }}"
+    DB_USER: "{{ app_slug }}"
+    DB_PASSWORD: "{{ db_password }}"
+    DB_HOST: localhost
+    DB_PORT: "3306"
   become: true
   become_user: "{{ app_user }}"
+  no_log: true
 
 - name: collect static files
-  command: "/home/{{ app_user }}/venv/bin/python manage.py collectstatic --noinput"
+  command: "{{ conda_dir }}/envs/{{ app_slug }}/bin/python manage.py collectstatic --noinput"
   args:
     chdir: "{{ app_dir }}"
   environment:
     DJANGO_ENV: production
+    DJANGO_SECRET_KEY: "{{ django_secret_key }}"
+    DJANGO_ALLOWED_HOSTS: "{{ ansible_host }}"
+    DB_NAME: "{{ app_slug }}"
+    DB_USER: "{{ app_slug }}"
+    DB_PASSWORD: "{{ db_password }}"
+    DB_HOST: localhost
+    DB_PORT: "3306"
   become: true
   become_user: "{{ app_user }}"
+  no_log: true
 
 - name: create /etc/{{ app_slug }}-apache
   file:
@@ -74,10 +128,11 @@
 
 - name: setup mod_wsgi-express apache instance
   command: >
-    /home/{{ app_user }}/venv/bin/mod_wsgi-express setup-server
+    {{ conda_dir }}/envs/{{ app_slug }}/bin/mod_wsgi-express setup-server
     {{ app_dir }}/{{ app_slug }}/wsgi.py
     --port=8090 --user {{ app_user }} --group {{ app_user }}
     --server-root=/etc/{{ app_slug }}-apache
+    --envvars-script /home/{{ app_user }}/env
     --allow-localhost --reload-on-changes
   args:
     chdir: "{{ app_dir }}"
@@ -98,3 +153,10 @@
 - name: enable the public apache vhost
   command: "a2ensite {{ app_slug }}.conf"
   notify: restart apache2
+
+- name: write operator README to app user home
+  template:
+    src: home-readme.md.j2
+    dest: "/home/{{ app_user }}/README.md"
+    owner: "{{ app_user }}"
+    mode: "0644"

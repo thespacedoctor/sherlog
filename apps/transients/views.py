@@ -5,12 +5,11 @@ from apps.transients.models import Transient
 
 # THE LIST TABLE'S COLUMNS, IN ORDER: (MODEL FIELD, HEADING).
 COLUMNS = (
-    ("name", "Name"),
-    ("origin", "Origin"),
-    ("sherlock_classification", "Classification"),
+    ("name", "Transient ID"),
+    ("origin_name", "Origin"),
+    ("sherlock_classification", "Sherlock Classification"),
     ("ra", "RA"),
     ("decl", "Dec"),
-    ("created_at", "Added"),
 )
 DEFAULT_SORT = "name"
 PAGE_SIZE = 50
@@ -80,7 +79,7 @@ class TransientDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["page_title"] = self.object.name
-        context["page_subtitle"] = f"Transient from {self.object.origin}."
+        context["page_subtitle"] = f"Transient from {self.object.origin_name or self.object.origin_url}."
         return context
 
 
@@ -99,7 +98,7 @@ class TransientListView(SortableSearchableListMixin, ListView):
     paginate_by = PAGE_SIZE
 
     columns = COLUMNS
-    search_fields = ("name", "origin", "sherlock_classification")
+    search_fields = ("name", "origin_name", "sherlock_classification")
     default_sort = DEFAULT_SORT
     tie_break_field = "uuid"
 

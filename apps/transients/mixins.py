@@ -25,7 +25,7 @@ class SortableSearchableListMixin:
     ```python
     class TransientListView(SortableSearchableListMixin, ListView):
         columns = (("name", "Name"), ("ra", "RA"))
-        search_fields = ("name", "origin")
+        search_fields = ("name", "origin_name")
     ```
     """
 
@@ -93,7 +93,7 @@ class SortableSearchableListMixin:
 
         ```python
         def get_base_queryset(self):
-            return Transient.objects.filter(origin="lasair")
+            return Transient.objects.filter(origin_name="lasair filter")
         ```
         """
         return super().get_queryset()
@@ -111,7 +111,7 @@ class SortableSearchableListMixin:
         sortField, sortDir = self.get_sort()
         orderBy = f"-{sortField}" if sortDir == "desc" else sortField
         # A SECOND, UNIQUE KEY KEEPS PAGINATION STABLE WHEN THE SORT COLUMN TIES
-        # (EVERY ROW SHARING AN origin, FOR INSTANCE).
+        # (EVERY ROW SHARING AN origin_name, FOR INSTANCE).
         return queryset.order_by(orderBy, self.tie_break_field)
 
     def get_template_names(self):

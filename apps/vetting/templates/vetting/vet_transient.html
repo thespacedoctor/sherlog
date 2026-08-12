@@ -22,8 +22,75 @@
         {% include "django_fundamentals/atoms/alert.html" with level="error" body=form.non_field_errors %}
     {% endif %}
 
-    <div class="grid gap-4 sm:grid-cols-3">
-        <div class="sm:col-span-2">
+    {# THE FORM ASKS ONE QUESTION AT A TIME. THE VERDICT IS ALL THAT SHOWS UNTIL #}
+    {# IT IS ANSWERED; EACH ANSWER THEN REVEALS ONLY WHAT IT MAKES RELEVANT.     #}
+    {# ALPINE STATE IS SEEDED FROM THE BOUND VALUES SO A REJECTED SUBMIT COMES   #}
+    {# BACK WITH THE SAME FIELDS OPEN. clean() ENFORCES THE SAME CHAIN SERVER-   #}
+    {# SIDE, SO THE RULES HOLD WITH JAVASCRIPT OFF.                             #}
+    <div x-data="{
+            verdict: '{{ form.verdict.value|default:''|escapejs }}',
+            reason: '{{ form.incorrect_reason.value|default:''|escapejs }}'
+         }">
+
+        {# RADIOS, NOT CHECKBOXES: A VERDICT IS ONE OR THE OTHER, AND RADIOS SAY #}
+        {# SO TO THE KEYBOARD AND TO A SCREEN READER. STYLED AS THE TWO COLOURED #}
+        {# CONTROLS THEY REPLACE, WITH THE INPUT ITSELF VISUALLY HIDDEN.         #}
+        <fieldset>
+            <legend class="sr-only">Did Sherlock get this right?</legend>
+            <div class="flex flex-wrap gap-3">
+                <label class="cursor-pointer">
+                    <input type="radio" name="verdict" value="incorrect" class="peer sr-only"
+                           x-model="verdict"
+                           {% if form.verdict.value == "incorrect" %}checked{% endif %}>
+                    <span class="inline-flex items-center justify-center gap-2 rounded border border-danger/40 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger/10 peer-checked:bg-danger/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-danger peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
+                        {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
+                        Incorrect
+                    </span>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="verdict" value="correct" class="peer sr-only"
+                           x-model="verdict"
+                           {% if form.verdict.value == "correct" %}checked{% endif %}>
+                    <span class="inline-flex items-center justify-center gap-2 rounded border border-success/40 px-4 py-2 text-sm font-medium text-success transition-colors hover:bg-success/10 peer-checked:bg-success/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-success peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
+                        {% include "django_fundamentals/atoms/icon.html" with name="check" class="h-4 w-4" %}
+                        Correct
+                    </span>
+                </label>
+                <label class="cursor-pointer" title="Unclear which source is associated with the transient.">
+                    <input type="radio" name="verdict" value="ambiguous" class="peer sr-only"
+                           x-model="verdict"
+                           {% if form.verdict.value == "ambiguous" %}checked{% endif %}>
+                    <span class="inline-flex items-center justify-center gap-2 rounded border border-warning/40 px-4 py-2 text-sm font-medium text-warning transition-colors hover:bg-warning/10 peer-checked:bg-warning/85 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-warning peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface">
+                        {% include "django_fundamentals/atoms/icon.html" with name="alert" class="h-4 w-4" %}
+                        Ambiguous
+                    </span>
+                </label>
+            </div>
+            {% for error in form.verdict.errors %}<p class="mt-2 text-xs text-danger">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        {# WHY IT IS WRONG — ONLY WHEN IT IS WRONG. #}
+        <div x-show="verdict === 'incorrect'" x-cloak class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div @change="reason = $event.target.value">
+                {% include "django_fundamentals/molecules/form_field.html" with field=form.incorrect_reason %}
+            </div>
+
+            <div x-show="reason === '{{ other_reason|escapejs }}'" x-cloak>
+                {% include "django_fundamentals/molecules/form_field.html" with field=form.new_reason %}
+            </div>
+
+            <div x-show="reason === '{{ wrong_rank|escapejs }}'" x-cloak>
+                {% include "django_fundamentals/molecules/form_field.html" with field=form.sherlock_correct_host %}
+            </div>
+
+            <div x-show="reason === '{{ wrong_classification|escapejs }}'" x-cloak>
+                {% include "django_fundamentals/molecules/form_field.html" with field=form.corrected_classification %}
+            </div>
+        </div>
+
+        {# THE COMMENT IS WORTH HAVING EITHER WAY, BUT ONLY ONCE THERE IS A VERDICT #}
+        {# TO COMMENT ON.                                                            #}
+        <div x-show="verdict" x-cloak class="mt-4">
             <label for="{{ form.user_comment.id_for_label }}" class="mb-1.5 block text-sm font-medium text-ink">{{ form.user_comment.label }}</label>
             <textarea name="{{ form.user_comment.html_name }}"
                       id="{{ form.user_comment.id_for_label }}"
@@ -33,38 +100,18 @@
             {% for error in form.user_comment.errors %}<p class="mt-1 text-xs text-danger">{{ error }}</p>{% endfor %}
         </div>
 
-        <div>
-            <label for="{{ form.sherlock_correct_host.id_for_label }}" class="mb-1.5 block text-sm font-medium text-ink">{{ form.sherlock_correct_host.label }}</label>
-            <input type="number"
-                   min="1"
-                   name="{{ form.sherlock_correct_host.html_name }}"
-                   id="{{ form.sherlock_correct_host.id_for_label }}"
-                   value="{{ form.sherlock_correct_host.value|default:"" }}"
-                   class="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">
-            <p class="mt-1 text-xs text-muted">{{ form.sherlock_correct_host.help_text }}</p>
-            {% for error in form.sherlock_correct_host.errors %}<p class="mt-1 text-xs text-danger">{{ error }}</p>{% endfor %}
+        <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+            {% if vetting.sherlock_correct is not None %}
+            <p class="mr-auto text-sm text-muted">
+                Already vetted as <strong class="text-ink">{{ vetting.verdict }}</strong>{% if vetting.user %} by {{ vetting.user.display_name }}{% endif %} — submitting replaces it.
+            </p>
+            {% endif %}
+            {# NOTHING TO SUBMIT UNTIL A VERDICT IS PICKED. #}
+            <button type="submit" :disabled="!verdict"
+                    class="inline-flex items-center justify-center gap-2 rounded bg-brand px-4 py-2 text-sm font-medium text-brand-fg transition-colors hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-40">
+                Save verdict
+            </button>
         </div>
-    </div>
-
-    {# THE TWO BUTTONS ARE THE FORM'S SUBMITS; `verdict` TELLS THEM APART. THE  #}
-    {# BUTTON ATOM HAS NO GREEN VARIANT, SO THE PAIR ARE STYLED HERE ON THE     #}
-    {# success/danger TOKENS.                                                   #}
-    <div class="mt-6 flex flex-wrap gap-3">
-        <button type="submit" name="verdict" value="correct"
-                class="inline-flex items-center justify-center gap-2 rounded bg-success px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-success focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
-            {% include "django_fundamentals/atoms/icon.html" with name="check" class="h-4 w-4" %}
-            Correct
-        </button>
-        <button type="submit" name="verdict" value="incorrect"
-                class="inline-flex items-center justify-center gap-2 rounded bg-danger px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
-            {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
-            Incorrect
-        </button>
-        {% if vetting.sherlock_correct is not None %}
-        <p class="self-center text-sm text-muted">
-            Already vetted as <strong class="text-ink">{{ vetting.verdict }}</strong>{% if vetting.user %} by {{ vetting.user.display_name }}{% endif %} — submitting replaces it.
-        </p>
-        {% endif %}
     </div>
 </form>
 {% endblock %}

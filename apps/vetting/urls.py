@@ -16,7 +16,7 @@ urlpatterns = [
         name="vetting_transient",
     ),
     re_path(
-        rf"^vetting/{VERSION_PATTERN}/(?P<tab>unvetted|correct|incorrect)/$",
+        rf"^vetting/{VERSION_PATTERN}/(?P<tab>unvetted|correct|incorrect|ambiguous)/$",
         VettingRunView.as_view(),
         name="vetting_run_tab",
     ),

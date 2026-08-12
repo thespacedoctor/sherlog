@@ -1,0 +1,70 @@
+# {{ app_slug }} — operator guide
+
+This machine runs {{ app_slug }} via Apache (public, port 80) reverse-proxying
+to mod_wsgi-express (port 8090), backed by MariaDB. The app's Python
+environment is a conda env managed by Miniforge, not a system install.
+
+This file is regenerated on every deploy — local edits will be overwritten.
+
+## Apache2 (public reverse proxy)
+
+    sudo systemctl start apache2
+    sudo systemctl stop apache2
+    sudo systemctl restart apache2
+    sudo systemctl status apache2
+
+## MariaDB (database)
+
+    sudo systemctl start mariadb
+    sudo systemctl stop mariadb
+    sudo systemctl restart mariadb
+    sudo systemctl status mariadb
+
+## mod_wsgi-express (runs the {{ app_slug }} app on :8090)
+
+This is not a systemd service — it's managed by its own apachectl wrapper:
+
+    sudo -u {{ app_user }} /etc/{{ app_slug }}-apache/apachectl start
+    sudo -u {{ app_user }} /etc/{{ app_slug }}-apache/apachectl stop
+    sudo -u {{ app_user }} /etc/{{ app_slug }}-apache/apachectl restart
+
+To rebuild the instance itself (e.g. after changing WSGI options, the conda
+env, or if `--server-root` needs regenerating) rather than just
+starting/stopping it, re-run `setup-server`:
+
+    sudo -u {{ app_user }} /etc/{{ app_slug }}-apache/apachectl stop
+    sudo -u {{ app_user }} bash -c 'cd {{ app_dir }} && {{ conda_dir }}/envs/{{ app_slug }}/bin/mod_wsgi-express setup-server {{ app_dir }}/{{ app_slug }}/wsgi.py --port=8090 --user {{ app_user }} --group {{ app_user }} --server-root=/etc/{{ app_slug }}-apache --envvars-script /home/{{ app_user }}/env --allow-localhost --reload-on-changes'
+    sudo -u {{ app_user }} /etc/{{ app_slug }}-apache/apachectl start
+
+This is the same command the `install-webapp` Ansible role runs on every
+deploy (see `roles/install-webapp/tasks/main.yml`), so re-deploying has the
+same effect.
+
+## Conda environment ({{ app_slug }})
+
+Miniforge is installed at {{ conda_dir }}. To run app management commands
+(shell, migrations, etc.) inside the app's conda environment:
+
+    sudo -u {{ app_user }} -i
+    source {{ conda_dir }}/etc/profile.d/conda.sh
+    conda activate {{ app_slug }}
+    source /home/{{ app_user }}/env
+    cd {{ app_dir }}
+    python manage.py <command>
+
+`source /home/{{ app_user }}/env` is required for commands that touch the
+database (e.g. `migrate`, `import_transients`) — without it, DJANGO_ENV is
+unset and settings.py silently falls back to a local SQLite database
+instead of MariaDB.
+
+## Load the test transient sample
+
+Follow the conda environment steps above, then run:
+
+    python manage.py import_transients
+
+With no arguments this loads the bundled sample
+(`apps/transients/data/sherlog_transient_sample.csv`, shipped with the app).
+Safe to re-run — it upserts on (name, origin_url), so re-running just
+no-ops on unchanged rows. Add `--dry-run` to validate the file without
+writing anything.

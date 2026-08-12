@@ -1,0 +1,22 @@
+{% comment %}
+ORIGIN LINK MOLECULE — WHERE A TRANSIENT CAME FROM, AS A NAME THAT OPENS THE
+BROKER FILTER THAT SELECTED IT.
+
+SHARED BY THE LIST TABLE AND THE DETAIL PAGE SO THE FALLBACKS STAY IDENTICAL:
+ROWS IMPORTED BEFORE origin WAS SPLIT MAY HAVE A URL BUT NO NAME, AND ROWS
+CREATED THROUGH THE API MAY HAVE NEITHER.
+
+USAGE:
+    {% include "transients/molecules/origin_link.html" with transient=transient %}
+{% endcomment %}
+{% if transient.origin_url %}
+    <a href="{{ transient.origin_url }}" rel="noopener noreferrer" target="_blank"
+       class="inline-flex items-center gap-1.5 rounded text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">
+        <span>{{ transient.origin_name|default:transient.origin_url }}</span>
+        {% include "django_fundamentals/atoms/icon.html" with name="external" class="h-3.5 w-3.5 shrink-0" %}
+    </a>
+{% elif transient.origin_name %}
+    {{ transient.origin_name }}
+{% else %}
+    <span class="text-muted">&mdash;</span>
+{% endif %}

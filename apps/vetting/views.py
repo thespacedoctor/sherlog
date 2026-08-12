@@ -11,14 +11,25 @@ from apps.transients.mixins import SortableSearchableListMixin
 from apps.transients.models import Transient
 from apps.transients.views import COLUMNS, DEFAULT_SORT, PAGE_SIZE
 from apps.vetting.forms import VettingForm
-from apps.vetting.models import TABS, SherlockVetting
+from apps.vetting.models import (
+    OTHER_REASON,
+    TABS,
+    VERDICT_AMBIGUOUS,
+    VERDICT_CORRECT,
+    VERDICT_INCORRECT,
+    WRONG_CLASSIFICATION,
+    WRONG_RANK,
+    SherlockVetting,
+    VettingReason,
+)
 
 # EACH TAB'S EXTRA FILTER ON TOP OF "EVERY ROW FOR THIS VERSION".
 TAB_FILTERS = {
     "all": Q(),
     "unvetted": Q(vetted_as__isnull=True),
-    "correct": Q(vetted_as=True),
-    "incorrect": Q(vetted_as=False),
+    "correct": Q(vetted_as=VERDICT_CORRECT),
+    "incorrect": Q(vetted_as=VERDICT_INCORRECT),
+    "ambiguous": Q(vetted_as=VERDICT_AMBIGUOUS),
 }
 
 
@@ -26,9 +37,10 @@ def run_queryset(version):
     """*transients in a vetting run, with their verdict annotated on*
 
     A ``FilteredRelation`` joins only this version's vetting row, so the result
-    is one row per transient carrying ``vetted_as`` (True, False or None) — the
-    table, its sorting and its searching stay the same code the plain transient
-    list uses.
+    is one row per transient carrying ``vetted_as`` (True, False or None) and
+    ``vetted_by`` (the vetting user's username, or None if that account was
+    since deleted) — the table, its sorting and its searching stay the same
+    code the plain transient list uses.
 
     **Key Arguments:**
 
@@ -36,7 +48,7 @@ def run_queryset(version):
 
     **Return:**
 
-    - ``queryset`` -- ``Transient`` queryset annotated with ``vetted_as``
+    - ``queryset`` -- ``Transient`` queryset annotated with ``vetted_as`` and ``vetted_by``
 
     **Usage:**
 
@@ -51,7 +63,10 @@ def run_queryset(version):
             )
         )
         .filter(vetting__isnull=False)
-        .annotate(vetted_as=F("vetting__sherlock_correct"))
+        .annotate(
+            vetted_as=F("vetting__sherlock_correct"),
+            vetted_by=F("vetting__user__username"),
+        )
     )
 
 
@@ -75,8 +90,9 @@ def run_counts(version):
     return SherlockVetting.objects.filter(sherlock_version=version).aggregate(
         all=Count("pk"),
         unvetted=Count("pk", filter=Q(sherlock_correct__isnull=True)),
-        correct=Count("pk", filter=Q(sherlock_correct=True)),
-        incorrect=Count("pk", filter=Q(sherlock_correct=False)),
+        correct=Count("pk", filter=Q(sherlock_correct=VERDICT_CORRECT)),
+        incorrect=Count("pk", filter=Q(sherlock_correct=VERDICT_INCORRECT)),
+        ambiguous=Count("pk", filter=Q(sherlock_correct=VERDICT_AMBIGUOUS)),
     )
 
 
@@ -126,7 +142,7 @@ class VettingRunView(SortableSearchableListMixin, ListView):
     paginate_by = PAGE_SIZE
 
     columns = COLUMNS
-    search_fields = ("name", "origin")
+    search_fields = ("name", "origin_name")
     default_sort = DEFAULT_SORT
     tie_break_field = "uuid"
 
@@ -176,14 +192,20 @@ class VetTransientView(LoginRequiredMixin, View):
 
     def get_vetting(self, version, uuid):
         get_run_or_404(version)
-        return get_object_or_404(
+        vetting = get_object_or_404(
             SherlockVetting.objects.select_related("transient"),
             sherlock_version=version,
             transient_id=uuid,
         )
+        # PINNED BEFORE THE FORM READS crossmatch_tree() FOR ITS RANK CHOICES.
+        vetting.transient.crossmatch_version = version
+        return vetting
 
     def render_form(self, request, vetting, form):
         counts = run_counts(vetting.sherlock_version)
+        # THE PAGE IS A JUDGEMENT ON ONE VERSION'S WORK, SO THE TABLE AND THE SKY
+        # VIEW SHOW THAT VERSION'S MATCHES AND NO OTHER.
+        vetting.transient.crossmatch_version = vetting.sherlock_version
         return render(
             request,
             self.template_name,
@@ -195,6 +217,11 @@ class VetTransientView(LoginRequiredMixin, View):
                 "remaining": counts["unvetted"],
                 "page_title": vetting.transient.name,
                 "page_subtitle": f"Vetting Sherlock {vetting.sherlock_version}.",
+                # THE TEMPLATE COMPARES THE CHOSEN REASON AGAINST THESE TO
+                # DECIDE WHICH FOLLOW-UP FIELD TO REVEAL.
+                "wrong_rank": WRONG_RANK,
+                "wrong_classification": WRONG_CLASSIFICATION,
+                "other_reason": OTHER_REASON,
             },
         )
 
@@ -203,25 +230,47 @@ class VetTransientView(LoginRequiredMixin, View):
         # A TRANSIENT ALREADY VETTED IS STILL EDITABLE — THE FORM OPENS ON THE
         # EXISTING VERDICT'S COMMENT AND HOST RANK.
         form = VettingForm(
+            transient=vetting.transient,
+            version=version,
             initial={
                 "user_comment": vetting.user_comment,
                 "sherlock_correct_host": vetting.sherlock_correct_host,
-            }
+                "incorrect_reason": vetting.incorrect_reason,
+                "corrected_classification": vetting.corrected_classification,
+            },
         )
         return self.render_form(request, vetting, form)
 
     def post(self, request, version, uuid):
         vetting = self.get_vetting(version, uuid)
-        form = VettingForm(request.POST)
+        form = VettingForm(request.POST, transient=vetting.transient, version=version)
 
         if not form.is_valid():
             return self.render_form(request, vetting, form)
 
+        reason = form.cleaned_data["reason"]
+
         vetting.sherlock_correct = form.cleaned_data["sherlock_correct"]
         vetting.user_comment = form.cleaned_data["user_comment"]
         vetting.sherlock_correct_host = form.cleaned_data["sherlock_correct_host"]
+        # ONLY "incorrect" CARRIES REJECTION DETAIL, AND RE-VETTING SOMETHING
+        # FROM incorrect TO correct OR ambiguous MUST CLEAR WHAT WAS THERE.
+        is_incorrect = vetting.sherlock_correct == VERDICT_INCORRECT
+        vetting.incorrect_reason = reason if is_incorrect else ""
+        vetting.corrected_classification = (
+            form.cleaned_data["corrected_classification"] if is_incorrect else ""
+        )
         vetting.user = request.user
         vetting.save()
+
+        # A REASON TYPED IN JOINS THE DROPDOWN FOR EVERY OTHER TRANSIENT IN THIS
+        # RUN, FOR EVERYONE.
+        if reason and reason not in dict(VettingReason.choices_for(version)):
+            VettingReason.objects.get_or_create(
+                sherlock_version=version,
+                reason=reason,
+                defaults={"created_by": request.user},
+            )
 
         nextVetting = next_unvetted(version, exclude_uuid=uuid)
         if nextVetting is None:

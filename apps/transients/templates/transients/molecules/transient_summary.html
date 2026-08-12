@@ -12,20 +12,18 @@ USAGE:
 <div class="mb-6 overflow-hidden rounded-lg border border-line">
     <table class="w-full text-left text-sm">
         <tbody class="divide-y divide-line">
+            {# THE w-40 SETS THE WHOLE LABEL COLUMN'S WIDTH — IT LIVED ON THE  #}
+            {# UUID ROW UNTIL THAT WAS DROPPED, SO IT MOVED HERE.             #}
             <tr class="hover:bg-raised">
-                <th scope="row" class="w-40 bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">UUID</th>
-                <td class="px-4 py-2.5 font-mono text-xs">{{ transient.uuid }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Name</th>
+                <th scope="row" class="w-52 bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Transient ID</th>
                 <td class="px-4 py-2.5">{{ transient.name }}</td>
             </tr>
             <tr class="hover:bg-raised">
                 <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Origin</th>
-                <td class="px-4 py-2.5">{{ transient.origin }}</td>
+                <td class="px-4 py-2.5">{% include "transients/molecules/origin_link.html" with transient=transient %}</td>
             </tr>
             <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Classification</th>
+                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Sherlock Classification</th>
                 <td class="px-4 py-2.5">
                     {% if transient.sherlock_classification %}
                         {{ transient.sherlock_classification }}
@@ -56,17 +54,15 @@ USAGE:
                     {% endif %}
                 </td>
             </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Added</th>
-                <td class="px-4 py-2.5 text-muted">{{ transient.created_at }}</td>
-            </tr>
-            <tr class="hover:bg-raised">
-                <th scope="row" class="bg-sunken px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted">Updated</th>
-                <td class="px-4 py-2.5 text-muted">{{ transient.updated_at }}</td>
-            </tr>
         </tbody>
     </table>
 </div>
+
+{# THE CIRCLES sky_view.js DRAWS FOR SHERLOCK'S MATCHES. EMITTED HERE RATHER   #}
+{# THAN IN EITHER PAGE SO THE DETAIL AND TRIAGE PAGES CANNOT DRIFT APART, AND  #}
+{# AS json_script RATHER THAN A data- ATTRIBUTE BECAUSE DJANGO DOES THE        #}
+{# ESCAPING AND IT STAYS INERT DATA, NOT AN EXECUTABLE INLINE SCRIPT.          #}
+{{ transient.crossmatch_overlays|json_script:"sky-view-crossmatches" }}
 
 <div class="mb-6">
     {% include "transients/molecules/sky_view.html" with ra=transient.ra decl=transient.decl label=transient.name %}

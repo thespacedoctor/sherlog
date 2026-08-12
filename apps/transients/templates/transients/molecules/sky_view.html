@@ -20,11 +20,60 @@ PARAMETERS:
      data-decl="{{ decl|stringformat:'f' }}"
      data-label="{{ label|default:'' }}"
      role="img"
-     aria-label="Sky image centred on {% if label %}{{ label }}{% else %}the transient{% endif %}, marked with a red circle."
+     aria-label="Sky image centred on {% if label %}{{ label }}{% else %}the transient{% endif %}, marked with a small red x, with Sherlock's matched sources ringed by the radius each was found within."
      class="relative h-[clamp(20rem,60vh,50rem)] w-full overflow-hidden rounded-lg border border-line bg-sunken">
     {# REPLACED BY THE ALADIN CANVAS ONCE THE SCRIPT RUNS; STAYS PUT IF IT CANNOT. #}
     <p data-sky-view-status
        class="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted">
         Loading sky image&hellip;
     </p>
+
+    {# WHICH CIRCLES TO DRAW. HIDDEN UNTIL sky_view.js HAS CIRCLES TO SHOW — A  #}
+    {# TRANSIENT SHERLOCK MATCHED NOTHING TO HAS NOTHING TO TOGGLE. BOTTOM-LEFT #}
+    {# IS TAKEN BY ALADIN'S OWN FoV READOUT, SO THIS SITS BOTTOM-RIGHT.         #}
+    <div data-sky-view-modes hidden
+         role="group"
+         aria-label="Which matched sources to ring"
+         class="absolute bottom-2 right-2 z-10 inline-flex overflow-hidden rounded border border-line bg-surface/90 text-xs shadow-sm backdrop-blur">
+        <button type="button" data-sky-view-mode="hide" aria-pressed="false"
+                class="px-2.5 py-1.5 font-medium text-ink transition-colors hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-brand aria-pressed:bg-brand aria-pressed:text-brand-fg">
+            Hide sources
+        </button>
+        <button type="button" data-sky-view-mode="top" aria-pressed="true"
+                class="border-l border-line px-2.5 py-1.5 font-medium text-ink transition-colors hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-brand aria-pressed:bg-brand aria-pressed:text-brand-fg">
+            Top match
+        </button>
+        <button type="button" data-sky-view-mode="merged" aria-pressed="false"
+                class="border-l border-line px-2.5 py-1.5 font-medium text-ink transition-colors hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-brand aria-pressed:bg-brand aria-pressed:text-brand-fg">
+            All merged sources
+        </button>
+        <button type="button" data-sky-view-mode="all" aria-pressed="false"
+                class="border-l border-line px-2.5 py-1.5 font-medium text-ink transition-colors hover:bg-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-brand aria-pressed:bg-brand aria-pressed:text-brand-fg">
+            All individual sources
+        </button>
+    </div>
 </div>
+
+{# WHAT THE CIRCLE STYLES AND THE TRANSIENT MARKER MEAN. THE CIRCLE ENTRIES ARE #}
+{# GREY RATHER THAN A RANK COLOUR BECAUSE IT IS THE LINE STYLE BEING KEYED, NOT #}
+{# ANY PARTICULAR SOURCE; THE TRANSIENT MARKER IS ALWAYS RED, SO ITS ENTRY IS.  #}
+<ul data-sky-view-legend hidden class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted">
+    <li class="inline-flex items-center gap-2">
+        <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        Sherlock search radius
+    </li>
+    <li class="inline-flex items-center gap-2">
+        <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5" />
+        </svg>
+        Source semi-major axis (or catalogue&rsquo;s equivalent)
+    </li>
+    <li class="inline-flex items-center gap-2">
+        <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0" aria-hidden="true">
+            <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        Transient location
+    </li>
+</ul>

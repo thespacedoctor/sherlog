@@ -1,5 +1,5 @@
 <VirtualHost *:80>
-    ServerName {{ deploy_host }}
+    ServerName {{ ansible_host }}
 
     ProxyPreserveHost On
     ProxyPass /static/ !

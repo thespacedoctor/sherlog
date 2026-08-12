@@ -33,12 +33,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # IS UNAFFECTED, AND THERE IS NO .env ON THE SERVER ANYWAY.
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = "change-me-in-production"  # OVERRIDE VIA ENV VAR IN DEPLOY
-DEBUG = True
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "7.7.7.7"]
+# CHECKED HERE (RATHER THAN FURTHER DOWN, WHERE THE DATABASE BACKEND ALSO NEEDS IT) SO
+# SECRET_KEY AND ALLOWED_HOSTS CAN BOTH DEPEND ON IT TOO.
+IS_PRODUCTION = os.environ.get("DJANGO_ENV") == "production"
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-production")
+DEBUG = not IS_PRODUCTION
+# COMMA-SEPARATED, SET BY THE DEPLOY PLAYBOOK TO THE TARGET HOST'S ADDRESS — SEE
+# deploy/deploy-sherlog/roles/install-webapp/templates/env.j2
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 AUTH_USER_MODEL = "django_fundamentals.User"
 SITE_ID = 1
+
+# OVERRIDES THE ACCOUNT_ADAPTER IMPORTED ABOVE. IDENTICAL TO django_fundamentals' OWN
+# ADAPTER, PLUS A SEPARATE, EXPLICIT GATE FOR THE DEV-CONFIRMATION-LINK CONVENIENCE THAT
+# DOESN'T DEPEND ON DEBUG — SEE adapters.py AND THE EMAIL VERIFICATION BLOCK BELOW.
+ACCOUNT_ADAPTER = "sherlog.adapters.AccountAdapter"
 
 # --- UI SKELETON -----------------------------------------------------------
 # COLOURS AND DIMENSIONS LIVE IN static/src/tokens.css, NOT HERE. THESE TWO
@@ -77,6 +88,9 @@ TEMPLATES = [
                 # STATIC DJANGO_FUNDAMENTALS_SIDEBAR_NAV CANNOT EXPRESS — SEE
                 # templates/django_fundamentals/organisms/sidebar.html
                 "apps.vetting.context_processors.vetting_runs",
+                # SURFACES THE DEV-CONFIRMATION-LINK UNDER SHERLOG_SHOW_DEV_CONFIRMATION_LINK
+                # RATHER THAN DEBUG — SEE context_processors.py AND adapters.py.
+                "sherlog.context_processors.dev_confirmation_link",
             ]
         },
     }
@@ -86,8 +100,8 @@ TEMPLATES = [
 # PRODUCTION IS ALWAYS MariaDB. DEVELOPMENT DEFAULTS TO SQLite AND SWITCHES TO
 # THE LOCAL MariaDB WITH DJANGO_DB=mariadb (SET IT IN .env OR PER COMMAND), SO
 # THE MySQL-ONLY FAILURES — COLLATION, STRICT MODE, INDEX LENGTHS — CAN BE
-# REPRODUCED BEFORE A DEPLOY RATHER THAN AFTER ONE.
-IS_PRODUCTION = os.environ.get("DJANGO_ENV") == "production"
+# REPRODUCED BEFORE A DEPLOY RATHER THAN AFTER ONE. (IS_PRODUCTION ITSELF IS SET NEAR THE TOP
+# OF THIS FILE, SINCE SECRET_KEY AND ALLOWED_HOSTS NEED IT TOO.)
 DATABASE_BACKEND = "mariadb" if IS_PRODUCTION else os.environ.get("DJANGO_DB", "sqlite").lower()
 
 if DATABASE_BACKEND == "mariadb":
@@ -145,7 +159,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # FOR PRODUCTION SMTP — INCLUDING A GMAIL WALKTHROUGH — SEE django-fundamentals'
 # docs/source/email.md
 if IS_PRODUCTION:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    # TEMPORARY: NO SMTP RELAY IS CONFIGURED YET, SO THE REAL smtp.EmailBackend BELOW IS
+    # UNREACHABLE (CONNECTS TO localhost:587, WHICH REFUSES) AND CRASHES SIGNUP. UNTIL SMTP
+    # IS SET UP (SEE COMMENT ABOVE), USE THE CONSOLE BACKEND SO SENDING NEVER HITS THE NETWORK,
+    # AND FLIP THE SEPARATE DEV-LINK SETTING (adapters.py / context_processors.py) SO
+    # verification_sent.html SHOWS THE CONFIRMATION LINK DIRECTLY EVEN THOUGH DEBUG IS OFF.
+    # REVERT BOTH THIS LINE AND THE FLAG BELOW ONCE EMAIL_HOST ETC. ARE WIRED UP.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    SHERLOG_SHOW_DEV_CONFIRMATION_LINK = True
     EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
     EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")

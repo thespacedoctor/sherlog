@@ -6,3 +6,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =========================================================================
+   ALADIN LITE CONTROL PLACEMENT
+   =========================================================================
+   ALADIN v3 ATTACHES THE FULLSCREEN AND PROJECTION BUTTONS DIRECTLY TO ITS
+   CONTAINER, BUT PUTS THE STACK (OVERLAY LAYERS) BUTTON INSIDE A TOOLBAR
+   ANCHORED DOWN THE LEFT EDGE. NO INIT OPTION MOVES A SINGLE BUTTON, SO THE
+   TOOLBAR IS MOVED INSTEAD — EVERY OTHER WIDGET THAT COULD SHARE IT IS OFF, SO
+   IT HOLDS THE STACK BUTTON ALONE.
+
+   sky_view.js PASSES toolbar:{position:"topright"}, WHICH ANCHORS THE TOOLBAR
+   TOP-RIGHT *AND* MAKES THE STACK MENU OPEN LEFTWARDS INSTEAD OF OFF-SCREEN.
+   THE MARGIN THEN DROPS THE BUTTON BELOW THE FULLSCREEN CONTROL AT top:.2rem.
+
+   THE TWO-CLASS SELECTOR IS LOAD-BEARING. ALADIN INJECTS ITS OWN STYLESHEET
+   INTO THE CONTAINER AT RUNTIME, SO ITS RULES ALWAYS COME LATER IN DOCUMENT
+   ORDER THAN tailwind.css; A SINGLE-CLASS SELECTOR TIES ON SPECIFICITY AND
+   LOSES. .aladin-container IS ADDED TO THE DIV BY ALADIN ITSELF.
+
+   THIS SITS OUTSIDE @layer BECAUSE ALADIN CREATES THE ELEMENT AT RUNTIME: THE
+   CLASS APPEARS IN NO TEMPLATE, SO INSIDE A LAYER TAILWIND WOULD PURGE IT. */
+.aladin-container .aladin-widgets-toolbar {
+    margin-top: 2.6rem;
+    margin-right: 0.2rem;
+    margin-bottom: 0;
+}
+
+@layer components {
+    /* =====================================================================
+       CROSSMATCH RANK COLOURS
+       =====================================================================
+       EACH ROW GROUP CARRIES ITS OWN --rank-colour INLINE, SET FROM THE
+       --color-rank-* TOKENS, BECAUSE THE COLOUR IS DATA — TAILWIND CANNOT
+       GENERATE A CLASS PER RANK. THE SOLID LEFT BORDER IS THE STRONG CUE THAT
+       MATCHES THE ALADIN CIRCLE; THE WASH IS DELIBERATELY FAINT SO THE ROW TEXT
+       KEEPS ITS OWN INK COLOUR, AND ITS CONTRAST. */
+    .rank-row > td:first-child {
+        border-left: 3px solid rgb(var(--rank-colour));
+    }
+
+    .rank-row-lead {
+        background: color-mix(in oklab, rgb(var(--rank-colour)) 8%, transparent);
+    }
+
+    .rank-row-child {
+        background: color-mix(in oklab, rgb(var(--rank-colour)) 4%, transparent);
+    }
+
+    /* SET WHEN A ROW OR ITS CIRCLE IS CLICKED, SO THE PAIR ARE OBVIOUSLY THE
+       SAME SOURCE. THE OUTLINE IS INSET SO IT DOES NOT SHIFT THE LAYOUT. */
+    .rank-group-selected .rank-row {
+        outline: 2px solid rgb(var(--rank-colour));
+        outline-offset: -2px;
+    }
+}

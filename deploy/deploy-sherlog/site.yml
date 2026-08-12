@@ -1,16 +1,31 @@
 ---
 # DEPLOYS sherlog TO A UBUNTU 24.04 DIGITALOCEAN DROPLET
 # ADAPTED FROM ~/git_repos/_services_/ansible-playbooks (install-apache / install-marshall-webapp
-# pattern) — THAT BASELINE IS 2019-ERA CONDA-BASED SCAFFOLDING AND WAS RE-WRITTEN HERE FOR A
-# STANDARD PYTHON VENV + MARIADB ON UBUNTU 24.04, NOT REUSED DIRECTLY.
+# pattern) — THAT BASELINE IS 2019-ERA CONDA-BASED SCAFFOLDING AND WAS RE-WRITTEN HERE FOR
+# MARIADB ON UBUNTU 24.04, NOT REUSED DIRECTLY. THE APP ITSELF RUNS IN A MINIFORGE/CONDA ENV.
+
+# BOOTSTRAP PLAY: A FRESH DROPLET ONLY HAS root, SO THIS ALWAYS CONNECTS AS root TO CREATE
+# deploy_user AND COPY root's authorized_keys ACROSS. IDEMPOTENT — A NO-OP ONCE deploy_user
+# ALREADY EXISTS. SET deploy_user AND deploy_user_password VIA --extra-vars, NOT COMMITTED HERE.
 - hosts: webapp
+  remote_user: root
+  roles:
+    - bootstrap-deploy-user
+
+- hosts: webapp
+  remote_user: "{{ deploy_user }}"
   become: true
   vars:
     app_slug: "sherlog"
     app_user: "sherlog"
     app_dir: "/home/sherlog/sherlog"
-    deploy_host: "7.7.7.7"
-    # SET db_password AND django_secret_key VIA --extra-vars OR ansible-vault, NOT COMMITTED HERE
+    conda_dir: "/home/{{ app_user }}/miniforge3"
+    python_version: "3.12"
+    # THE LOCAL (CONTROL-MACHINE) CONDA ENV THAT CAN IMPORT django_fundamentals — NEEDED TO
+    # BUILD TAILWIND CSS BEFORE SYNCING. SEE roles/install-webapp/tasks/main.yml.
+    local_conda_env: "sherlog"
+    # SET ansible_host, db_password AND django_secret_key VIA --extra-vars OR ansible-vault, NOT COMMITTED HERE
+    # SET THE SUDO PASSWORD VIA -K (NOT COMMITTED, NOT ON THE CLI EITHER)
   roles:
     - install-apache
     - install-mariadb

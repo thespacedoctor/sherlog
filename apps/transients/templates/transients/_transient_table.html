@@ -23,7 +23,6 @@ PARAMETERS:
         <table class="w-full text-left text-sm">
             <thead class="bg-sunken text-xs uppercase tracking-wider text-muted">
                 <tr>
-                    <th class="px-4 py-2.5 font-medium">UUID</th>
                     {% for column in columns %}
                     <th class="px-4 py-2.5 font-medium" {% if column.is_sorted %}aria-sort="{% if column.dir == 'desc' %}descending{% else %}ascending{% endif %}"{% endif %}>
                         <a href="{{ column.url }}"
@@ -42,34 +41,55 @@ PARAMETERS:
             <tbody class="divide-y divide-line">
                 {% for transient in transients %}
                 <tr class="hover:bg-raised">
+                    {# THE ID OPENS THE TRANSIENT HERE; THE ICON BESIDE IT OPENS  #}
+                    {# THE BROKER'S OWN PAGE. THE UUID COLUMN USED TO CARRY THE   #}
+                    {# ROW'S ONLY LINK, SO IT MOVED HERE WHEN THAT WAS DROPPED.   #}
                     <td class="whitespace-nowrap px-4 py-2.5">
                         {% if vetting_version %}
                             {% url 'vetting_transient' version=vetting_version uuid=transient.uuid as row_url %}
                         {% else %}
                             {% url 'transient_detail' uuid=transient.uuid as row_url %}
                         {% endif %}
-                        <a href="{{ row_url }}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ transient.uuid }}</a>
+                        <span class="inline-flex items-center gap-1.5">
+                            <a href="{{ row_url }}" class="rounded font-mono text-xs text-brand hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand">{{ transient.name }}</a>
+                            {% if transient.url %}
+                            <a href="{{ transient.url }}" rel="noopener noreferrer" target="_blank"
+                               class="rounded text-muted hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                               title="Open {{ transient.name }} at the broker">
+                                {% include "django_fundamentals/atoms/icon.html" with name="external" class="h-3.5 w-3.5 shrink-0" %}
+                                <span class="sr-only">Open {{ transient.name }} at the broker</span>
+                            </a>
+                            {% endif %}
+                        </span>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-2.5">{{ transient.name }}</td>
-                    <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.origin }}</td>
+                    <td class="whitespace-nowrap px-4 py-2.5 text-muted">
+                        {% include "transients/molecules/origin_link.html" with transient=transient %}
+                    </td>
                     <td class="whitespace-nowrap px-4 py-2.5">
                         {% if transient.sherlock_classification %}{{ transient.sherlock_classification }}{% else %}<span class="text-muted">&mdash;</span>{% endif %}
                     </td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.ra }}</td>
                     <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs">{{ transient.decl }}</td>
-                    <td class="whitespace-nowrap px-4 py-2.5 text-muted">{{ transient.created_at|date:"Y-m-d H:i" }}</td>
                     {% if show_vetted_as %}
                     <td class="whitespace-nowrap px-4 py-2.5">
-                        {% if transient.vetted_as is True %}
+                        {% if transient.vetted_as == "correct" %}
                             <span class="inline-flex items-center gap-1.5 text-success">
                                 {% include "django_fundamentals/atoms/icon.html" with name="check" class="h-4 w-4" %}
                                 <span class="sr-only">Correct</span>
                             </span>
-                        {% elif transient.vetted_as is False %}
+                            {% if transient.vetted_by %}<span class="ml-1.5 text-xs text-muted">{{ transient.vetted_by }}</span>{% endif %}
+                        {% elif transient.vetted_as == "incorrect" %}
                             <span class="inline-flex items-center gap-1.5 text-danger">
                                 {% include "django_fundamentals/atoms/icon.html" with name="close" class="h-4 w-4" %}
                                 <span class="sr-only">Incorrect</span>
                             </span>
+                            {% if transient.vetted_by %}<span class="ml-1.5 text-xs text-muted">{{ transient.vetted_by }}</span>{% endif %}
+                        {% elif transient.vetted_as == "ambiguous" %}
+                            <span class="inline-flex items-center gap-1.5 text-warning">
+                                {% include "django_fundamentals/atoms/icon.html" with name="alert" class="h-4 w-4" %}
+                                <span class="sr-only">Ambiguous</span>
+                            </span>
+                            {% if transient.vetted_by %}<span class="ml-1.5 text-xs text-muted">{{ transient.vetted_by }}</span>{% endif %}
                         {% else %}
                             <span class="text-muted">not vetted</span>
                         {% endif %}
@@ -78,7 +98,7 @@ PARAMETERS:
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if show_vetted_as %}8{% else %}7{% endif %}" class="px-4 py-8 text-center text-muted">
+                    <td colspan="{% if show_vetted_as %}6{% else %}5{% endif %}" class="px-4 py-8 text-center text-muted">
                         {% if search_term %}No transients match &ldquo;{{ search_term }}&rdquo;.{% else %}No transients yet.{% endif %}
                     </td>
                 </tr>

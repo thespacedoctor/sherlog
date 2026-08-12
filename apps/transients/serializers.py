@@ -19,13 +19,20 @@ class TransientSerializer(serializers.ModelSerializer):
     sherlock_classification = serializers.CharField(
         max_length=10, required=False, allow_null=True, allow_blank=False
     )
+    # THE UniqueTogetherValidator BELOW NAMES origin_url, AND DRF INSISTS EVERY
+    # FIELD IN A validator EITHER BE REQUIRED OR CARRY A DEFAULT — WITHOUT ONE, A
+    # POST THAT OMITS IT IS REJECTED BEFORE THE VALIDATOR EVER RUNS.
+    origin_url = serializers.URLField(
+        max_length=200, required=False, allow_blank=True, default=""
+    )
 
     class Meta:
         model = Transient
         fields = [
             "uuid",
             "name",
-            "origin",
+            "origin_name",
+            "origin_url",
             "ra",
             "decl",
             "url",
@@ -41,6 +48,6 @@ class TransientSerializer(serializers.ModelSerializer):
         validators = [
             serializers.UniqueTogetherValidator(
                 queryset=Transient.objects.all(),
-                fields=["name", "origin"],
+                fields=["name", "origin_url"],
             )
         ]

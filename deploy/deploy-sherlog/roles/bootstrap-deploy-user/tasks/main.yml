@@ -1,0 +1,30 @@
+---
+- name: create deploy user account
+  user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    password: "{{ deploy_user_password | password_hash('sha512') }}"
+    update_password: on_create
+
+- name: read root's authorized_keys
+  slurp:
+    src: /root/.ssh/authorized_keys
+  register: root_authorized_keys
+
+- name: ensure deploy user .ssh directory exists
+  file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+
+- name: install root's authorized_keys for the deploy user
+  copy:
+    content: "{{ root_authorized_keys.content | b64decode }}"
+    dest: "/home/{{ deploy_user }}/.ssh/authorized_keys"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
