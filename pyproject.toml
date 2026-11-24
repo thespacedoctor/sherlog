@@ -14,11 +14,12 @@ dependencies = [
     "python-dotenv>=1.0",
     "mysqlclient>=2.2",
     "gunicorn>=23",
-    "mod-wsgi>=5",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-django", "pytest-env"]
+# mod-wsgi COMPILES AGAINST APACHE (apxs), SO IT IS INSTALLED ONLY WHERE APACHE IS: THE DEPLOY PLAYBOOK
+prod = ["mod-wsgi>=5"]
 
 [build-system]
 requires = ["setuptools>=70"]
