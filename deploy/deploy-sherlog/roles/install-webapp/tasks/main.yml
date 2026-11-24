@@ -67,7 +67,7 @@
   become_user: "{{ app_user }}"
 
 - name: install the app into the conda environment
-  command: "{{ conda_dir }}/envs/{{ app_slug }}/bin/pip install -e ."
+  command: "{{ conda_dir }}/envs/{{ app_slug }}/bin/pip install -e '.[prod]'"
   args:
     chdir: "{{ app_dir }}"
   become: true

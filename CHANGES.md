@@ -1,5 +1,7 @@
 # Changes
 
+* **FIXED**: CI installs again — `mod-wsgi`, which needs Apache's `apxs` to build, moved to a `prod` extra that only the deploy playbook installs.
+
 * **ENHANCEMENT**: CI skips the test and check workflows when a change touches only `CHANGES.md`.
 
 * **ENHANCEMENT**: the LASr R90 AGN list is its own sky view catalogue, alongside the LASr-GPS galaxy sample already there — the two answer to Sherlock's separate `LASr galaxy` and `LASr agn` searches. They differ in both colour and shape, being the one pair a reader is likely to compare directly. The R90 AGN *candidate* list is deliberately left out.
